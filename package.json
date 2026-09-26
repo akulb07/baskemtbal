@@ -1,0 +1,13 @@
+{
+  "name": "afterhours-streetball",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server/server.js",
+    "start": "node server/server.js",
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": { "three": "0.180.0", "ws": "8.18.3" }
+}
