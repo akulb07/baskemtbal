@@ -62,7 +62,7 @@ export class NetworkManager {
     } catch {
       this.onMessage({
         type: "error",
-        message: "Enter a valid ws:// or wss:// server address.",
+        message: "Online rooms are unavailable. Try again later.",
       });
       return;
     }
@@ -117,7 +117,7 @@ export class NetworkManager {
       this.onMessage({
         type: "error",
         message:
-          "Cannot reach that game server. Start the included server or check its address.",
+          "Couldn’t connect. Try again in a moment.",
       });
     this.ws.onclose = () => {
       this.connected = false;
@@ -136,7 +136,7 @@ export class NetworkManager {
       } else if (!this.intentional)
         this.onMessage({
           type: "error",
-          message: "Connection closed. Check the server address and try again.",
+          message: "Connection closed. Try again.",
         });
     };
   }

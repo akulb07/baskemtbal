@@ -220,58 +220,50 @@ function openSettings() {
 }
 $("settings-button").onclick = openSettings;
 function openOnline() {
-  const defaultURL = ["localhost", "127.0.0.1"].includes(location.hostname)
-    ? `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`
-    : "";
   showPanel(
-    '<span class="eyebrow">BRING YOUR RIVAL</span><h2>ONLINE 1V1</h2><p>Connect both players to the same game server, then share a private room code or join the quick-match queue.</p><label for="server-url">Game server address</label><input id="server-url" placeholder="wss://your-game-server.example/ws" autocomplete="url"><p class="server-help">The downloadable project includes the multiplayer server. On a local network, use the host computer’s address with port 4173.</p><div class="row"><button id="quick-match" class="primary">QUICK MATCH</button><button id="create-room" class="primary">PRIVATE ROOM</button></div><label for="room-input">Have a room code?</label><div class="row"><input id="room-input" placeholder="ABCDE" maxlength="5" autocapitalize="characters"><button id="join-room" class="secondary-button">JOIN ROOM</button></div><p id="online-status" role="status"></p>',
+    '<h2>ONLINE 1V1</h2><button id="create-room" class="primary">CREATE ROOM</button><label for="room-input">Room code</label><div class="row"><input id="room-input" placeholder="ABCDE" maxlength="5" autocapitalize="characters" autocomplete="off" spellcheck="false"><button id="join-room" class="secondary-button">JOIN</button></div><p id="online-status" role="status"></p>',
   );
-  $("server-url").value = settings.server || defaultURL;
   const connect = (action) => {
-    const url = $("server-url").value.trim();
-    try {
-      const parsed = new URL(url);
-      if (!["ws:", "wss:"].includes(parsed.protocol)) throw Error();
-      if (location.protocol === "https:" && parsed.protocol === "ws:") {
-        $("online-status").textContent =
-          "This secure page needs a wss:// server. For a local network, open the game directly from the host computer.";
-        return;
-      }
-    } catch {
-      $("online-status").textContent =
-        "Enter the address of a running multiplayer server.";
+    const code = $("room-input").value.trim().toUpperCase();
+    if (action === "join" && !/^[A-Z0-9]{5}$/.test(code)) {
+      $("online-status").textContent = "Enter a 5-character room code.";
       return;
     }
-    settings.server = url;
-    saveSettings();
-    $("online-status").textContent = "Connecting to the court…";
+    if (location.hostname.endsWith(".vercel.app")) {
+      $("online-status").textContent = "Online rooms aren’t available yet.";
+      return;
+    }
+    const url = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
+    $("online-status").textContent = "Connecting…";
     network.connect(
       url,
       action,
       settings.name,
-      $("room-input").value.trim().toUpperCase(),
+      code,
     );
   };
-  $("quick-match").onclick = () => connect("quick");
   $("create-room").onclick = () => connect("create");
   $("join-room").onclick = () => connect("join");
+  $("room-input").onkeydown = (event) => {
+    if (event.key === "Enter") connect("join");
+  };
 }
 function handleNetwork(m) {
   if (m.type === "joined") {
     localId = m.slot;
     showPanel(
-      '<span class="eyebrow">PRIVATE COURT</span><h2>YOU’RE UP NEXT.</h2><p>Share this room code and server address with your friend.</p><div class="room-code" id="room-code"></div><p id="online-status">Waiting for another player…</p><button id="copy-room" class="primary">COPY INVITE →</button><button id="cancel-room" class="secondary-button">CANCEL</button>',
+      '<h2>ROOM CODE</h2><div class="room-code" id="room-code"></div><p id="online-status">Waiting for your friend…</p><button id="copy-room" class="primary">COPY CODE</button><button id="cancel-room" class="secondary-button">CANCEL</button>',
     );
     $("room-code").textContent = m.code;
     $("copy-room").onclick = async () => {
       try {
         await navigator.clipboard.writeText(
-          `BASKEMTBAL room: ${m.code}\nServer: ${network.url}`,
+          m.code,
         );
-        $("online-status").textContent = "Invite copied.";
+        $("online-status").textContent = "Code copied.";
       } catch {
         $("online-status").textContent =
-          `Room ${m.code}. Server: ${network.url}`;
+          `Room ${m.code}`;
       }
     };
     $("cancel-room").onclick = () => {

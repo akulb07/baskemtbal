@@ -169,7 +169,7 @@ export function attachRooms(server) {
           if (!room)
             send(ws, {
               type: "error",
-              message: "Room not found. Check the code and server address.",
+              message: "Room not found. Check the code.",
             });
           else if (room.slots.length >= 2)
             send(ws, {
