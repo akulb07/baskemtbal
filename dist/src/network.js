@@ -67,6 +67,7 @@ export class NetworkManager {
       return;
     }
     this.ws.onopen = () => {
+      clearTimeout(this.connectTimeout);
       this.connected = true;
       this.reconnecting = false;
       this.send(
@@ -117,9 +118,10 @@ export class NetworkManager {
       this.onMessage({
         type: "error",
         message:
-          "Couldn’t connect. Try again in a moment.",
+          "Server may be waking up. Give it a minute, then try again.",
       });
     this.ws.onclose = () => {
+      clearTimeout(this.connectTimeout);
       this.connected = false;
       clearInterval(this.pinger);
       if (!this.intentional && this.token) {
@@ -136,9 +138,14 @@ export class NetworkManager {
       } else if (!this.intentional)
         this.onMessage({
           type: "error",
-          message: "Connection closed. Try again.",
+          message: "Couldn’t connect yet. Give it a minute, then try again.",
         });
     };
+    this.connectTimeout = setTimeout(() => {
+      if (this.connected) return;
+      this.disconnect();
+      this.onMessage({ type: "error", message: "Connection timed out. Try again." });
+    }, 90000);
   }
   send(data) {
     if (this.ws?.readyState === WebSocket.OPEN)
@@ -190,6 +197,7 @@ export class NetworkManager {
   }
   disconnect() {
     this.intentional = true;
+    clearTimeout(this.connectTimeout);
     clearTimeout(this.retry);
     clearInterval(this.pinger);
     if (this.ws) {

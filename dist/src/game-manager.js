@@ -4,6 +4,7 @@ import { InputManager } from "./input.js";
 import { AIInputController } from "./ai.js";
 import { AudioManager } from "./audio.js";
 import { NetworkManager } from "./network.js";
+import { multiplayerURL } from "./multiplayer.js";
 import { C, emptyInput, clamp, States } from "./config.js";
 const $ = (id) => document.getElementById(id);
 const defaults = {
@@ -229,12 +230,8 @@ function openOnline() {
       $("online-status").textContent = "Enter a 5-character room code.";
       return;
     }
-    if (location.hostname.endsWith(".vercel.app")) {
-      $("online-status").textContent = "Online rooms aren’t available yet.";
-      return;
-    }
-    const url = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
-    $("online-status").textContent = "Connecting…";
+    const url = multiplayerURL(location);
+    $("online-status").textContent = "Connecting… first time can take a minute.";
     network.connect(
       url,
       action,
