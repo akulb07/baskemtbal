@@ -9,5 +9,5 @@
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.js"
   },
-  "dependencies": { "three": "0.180.0", "ws": "8.18.3" }
+  "dependencies": { "three": "0.180.0", "ws": "8.22.0" }
 }
