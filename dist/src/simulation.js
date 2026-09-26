@@ -54,6 +54,7 @@ export class GameSimulation {
       points: 1,
       age: 0,
       scored: false,
+      shotPending: false,
       rimTouched: false,
     };
     this.score = [0, 0];
@@ -87,6 +88,7 @@ export class GameSimulation {
     if (this.events.length > 32) this.events.shift();
   }
   check(owner, message = "CHECK BALL") {
+    this.recordMiss();
     this.checkOwner = owner;
     this.possession = owner;
     this.state = States.DEAD;
@@ -113,6 +115,7 @@ export class GameSimulation {
       vy: 0,
       vz: 0,
       scored: false,
+      shotPending: false,
       rimTouched: false,
     });
     this.clock = this.options.shotClock;
@@ -267,6 +270,9 @@ export class GameSimulation {
       shooter: p.id,
       lastTouch: p.id,
       points: this.isTwo(p) ? 2 : 1,
+      shotType: type,
+      shotDistance: dist,
+      shotPending: true,
       age: 0,
       scored: false,
       rimTouched: false,
@@ -458,6 +464,12 @@ export class GameSimulation {
       }
     }
   }
+  recordMiss() {
+    const b = this.ball;
+    if (!b.shotPending) return;
+    b.shotPending = false;
+    if (!b.scored) this.emit("miss", { player: b.shooter });
+  }
   ballPhysics(dt) {
     const b = this.ball;
     const prev = { x: b.x, y: b.y, z: b.z };
@@ -512,6 +524,7 @@ export class GameSimulation {
         cz = prev.z + (b.z - prev.z) * f;
       if (length(cx, cz - C.hoop.z) < C.rimRadius - C.ballRadius * 0.45) {
         b.scored = true;
+        b.shotPending = false;
         if (!this.needsClear) {
           const id = b.shooter;
           this.score[id] += b.points;
@@ -520,6 +533,8 @@ export class GameSimulation {
             player: id,
             points: b.points,
             swish: !b.rimTouched,
+            shotType: b.shotType,
+            distance: b.shotDistance,
           });
           this.state = States.SCORE;
           this.timer = 1.9;
@@ -533,13 +548,14 @@ export class GameSimulation {
             this.timer = 2.5;
           }
         } else {
-          this.check(1 - b.shooter, "CLEAR THE BALL FIRST");
+          this.check(1 - b.shooter, "CLEAR");
         }
         b.vx *= 0.35;
         b.vz *= 0.35;
       }
     }
     if (b.y < C.ballRadius) {
+      this.recordMiss();
       b.y = C.ballRadius;
       if (Math.abs(b.vy) > 0.7) this.emit("bounce");
       b.vy = Math.abs(b.vy) * 0.69;
@@ -573,9 +589,11 @@ export class GameSimulation {
         b.lastTouch = p.id;
         this.state = States.LOOSE;
         this.stats[p.id].blocks++;
+        b.shotPending = false;
         this.emit("block", { player: p.id });
       }
       if (b.age > 0.42 && d < 0.67 && b.y < 1.5 + p.y && b.vy < 2.3) {
+        this.recordMiss();
         const previous = this.possession;
         Object.assign(b, { owner: p.id, lastTouch: p.id, scored: false });
         this.stats[p.id].rebounds++;
@@ -610,7 +628,7 @@ export class GameSimulation {
       this.updateHeldBall();
       if (this.timer <= 0) {
         this.state = States.LIVE;
-        this.emit("message", { text: "BALL IN" });
+        this.emit("message", { text: "START" });
       }
       return;
     }

@@ -1,0 +1,19 @@
+todo / rough edges
+
+- play a full match on actual android + iphone + tablet
+- check long sessions, orientation changes and touch buttons together
+- measure mobile fps properly, don't assume 60
+- two phones over the internet with bad wifi / latency
+- more distinct layup + dunk animations, hook shots
+- proper history rewind for steals and blocks (contests already have a limited version)
+- could split up game-manager and simulation later
+- make every player attribute actually do something before adding archetypes
+
+tested so far:
+18 automated tests pass. shots/misses, scoring direction, rim/board, dunk,
+pump fake, contests, clock, rebounds, collision, blocks, win by 2, reset,
+AI match, input validation, rooms, ready check, movement, reconnect, rematch.
+
+desktop menu/court got a visual check. more browser interactions got blocked
+by the testing environment's approval usage limit, so they're not verified.
+real phone and adverse-network acceptance is still pending.

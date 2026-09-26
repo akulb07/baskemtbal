@@ -30,7 +30,8 @@ export class SceneManager {
     this.temp = new T.Vector3();
     this.materials = {};
     this.geometries = {};
-    this.scene.add(new T.HemisphereLight(0xfce7cb, 0x4a6970, 2.2));
+    this.ambient = new T.HemisphereLight(0xfce7cb, 0x4a6970, 2.2);
+    this.scene.add(this.ambient);
     this.sun = new T.DirectionalLight(0xffd0a1, 3.2);
     this.sun.position.set(-10, 16, -9);
     this.sun.castShadow = true;
@@ -46,10 +47,10 @@ export class SceneManager {
     this.sun.shadow.bias = -0.0003;
     this.scene.add(this.sun);
     this.createCourt();
-    this.createEnvironment();
+    this.setMap("day");
     this.characters = [
-      this.createPlayer(0xe9974f, 0),
-      this.createPlayer(0xa3d5d5, 1),
+      this.createPlayer(0xc8102e, 0),
+      this.createPlayer(0x171519, 1),
     ];
     this.ball = this.mesh(
       new T.SphereGeometry(0.12, 24, 16),
@@ -85,12 +86,12 @@ export class SceneManager {
       roughness: 0.85,
     }));
   }
-  mesh(geo, mat, parent = this.scene) {
+  mesh(geo, mat, parent = this.environmentTarget || this.scene) {
     const m = new T.Mesh(geo, mat);
     parent.add(m);
     return m;
   }
-  box(x, y, z, w, h, d, color, parent = this.scene) {
+  box(x, y, z, w, h, d, color, parent = this.environmentTarget || this.scene) {
     const key = `b${w},${h},${d}`;
     const m = this.mesh(
       (this.geometries[key] ??= new T.BoxGeometry(w, h, d)),
@@ -102,7 +103,7 @@ export class SceneManager {
     m.receiveShadow = true;
     return m;
   }
-  line(points, color = 0xe5dec2, parent = this.scene) {
+  line(points, color = 0xe5dec2, parent = this.environmentTarget || this.scene) {
     const geo = new T.BufferGeometry().setFromPoints(
       points.map((p) => new T.Vector3(...p)),
     );
@@ -113,7 +114,7 @@ export class SceneManager {
     parent.add(l);
     return l;
   }
-  tube(a, b, r, color, parent = this.scene) {
+  tube(a, b, r, color, parent = this.environmentTarget || this.scene) {
     const start = new T.Vector3(...a),
       end = new T.Vector3(...b),
       dir = end.clone().sub(start);
@@ -193,9 +194,8 @@ export class SceneManager {
     ctx.font = "bold 36px Arial";
     ctx.textAlign = "center";
     ctx.fillStyle = "#d8dbc399";
-    ctx.fillText("WESTSIDE", 750, 1230);
+    ctx.fillText("BASKEMTBAL", 750, 1230);
     ctx.font = "18px Arial";
-    ctx.fillText("AFTERHOURS ATHLETIC CLUB", 750, 1270);
     const texture = new T.CanvasTexture(canvas);
     texture.colorSpace = T.SRGBColorSpace;
     texture.anisotropy = 8;
@@ -302,11 +302,27 @@ export class SceneManager {
             (i + col) % 4 === 0 ? 0xdac092 : 0x536c73,
           );
     }
+    {
+      this.box(0, -0.18, -35, 170, 0.12, 30, 0x167f91);
+      for (let i = 0; i < 13; i++) {
+        const x = (i - 6) * 8, h = 10 + (i % 4) * 2.5;
+        this.box(x, h / 2, -43, 5, h, 4, i % 2 ? 0xe8c8a5 : 0xf0d9b9);
+        this.box(x, h + .1, -43, 5.3, .3, 4.3, 0x9e6d5f);
+        for (let y = 2; y < h - 1; y += 2) this.box(x, y, -40.9, 3.6, .5, .03, 0x426c74);
+      }
+      this.box(0, .2, -18, 100, .3, 1, 0xe8d0ad);
+    }
+    this.floodlights = [];
     for (const x of [-10, 10]) {
       this.tube([x, 0, 5], [x, 7, 5], 0.065, 0x394f55);
       this.tube([x, 7, 5], [x * 0.88, 7, 5], 0.06, 0x394f55);
       const lamp = this.box(x * 0.88, 6.95, 5, 0.48, 0.1, 0.3, 0xffe1a0);
       lamp.material = new T.MeshBasicMaterial({ color: 0xffe1a0 });
+      const light = new T.SpotLight(0xe8efff, 0, 40, Math.PI / 3, .6, 2);
+      light.position.set(x * .88, 6.9, 5);
+      light.target.position.set(0, 0, 7);
+      this.environment.add(light, light.target);
+      this.floodlights.push(light);
     }
     for (let k = 0; k < 2; k++) {
       const x = k ? -10 : 10,
@@ -321,6 +337,7 @@ export class SceneManager {
       new T.MeshBasicMaterial({ color: 0xffdab0 }),
     );
     sun.position.set(-20, 17, -65);
+    this.skyDisc = sun;
   }
   createPlayer(color, id) {
     const root = new T.Group();
@@ -335,7 +352,7 @@ export class SceneManager {
     );
     torso.position.y = 1.19;
     torso.castShadow = true;
-    this.box(0, 0.85, 0, 0.43, 0.23, 0.28, 0x233f48, body);
+    this.box(0, 0.85, 0, 0.43, 0.23, 0.28, 0x171519, body);
     const head = this.mesh(
       new T.SphereGeometry(0.18, 12, 10),
       this.mat(skin),
@@ -386,7 +403,7 @@ export class SceneManager {
       body.add(leg);
       const shorts = this.mesh(
         new T.CylinderGeometry(0.14, 0.13, 0.28, 8),
-        this.mat(0x233f48),
+        this.mat(0x171519),
         leg,
       );
       shorts.position.y = -0.1;
@@ -453,7 +470,7 @@ export class SceneManager {
   }
   customize(settings) {
     const c = this.characters[0];
-    c.torso.material = this.mat(settings.color || "#e9974f");
+    c.torso.material = this.mat(settings.color || "#c8102e");
     const canvas = document.createElement("canvas");
     canvas.width = 128;
     canvas.height = 128;
@@ -461,12 +478,33 @@ export class SceneManager {
     ctx.fillStyle = "#f5ebd2";
     ctx.font = "bold 88px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(String(settings.number || 23), 64, 96);
+    ctx.fillText(String(settings.number ?? 23), 64, 96);
     const tex = new T.CanvasTexture(canvas);
     for (const label of c.labels) {
       label.material = label.material.clone();
       label.material.map = tex;
     }
+  }
+  setMap(map) {
+    if (!["day", "night"].includes(map)) return;
+    this.currentMap = map;
+    if (!this.environment) {
+      this.environment = new T.Group();
+      this.scene.add(this.environment);
+      this.environmentTarget = this.environment;
+      this.createEnvironment();
+      this.environmentTarget = null;
+    }
+    const night = map === "night";
+    this.scene.background.set(night ? "#080f24" : "#a9cddd");
+    this.scene.fog.color.set(night ? "#101a30" : "#b8d0d9");
+    this.ambient.color.set(night ? 0x95b5ed : 0xfce7cb);
+    this.ambient.intensity = night ? .7 : 2.2;
+    this.sun.color.set(night ? 0x97b9ff : 0xffe0b8);
+    this.sun.intensity = night ? .3 : 3.2;
+    this.skyDisc.material.color.set(night ? 0xd9e5ff : 0xffe3af);
+    this.skyDisc.scale.setScalar(night ? .55 : 1);
+    this.floodlights.forEach(light => { light.intensity = night ? 650 : 0; });
   }
   setQuality(q) {
     this.quality = q;

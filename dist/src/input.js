@@ -14,20 +14,6 @@ export const DEFAULT_KEYS = [
     defend: "KeyF",
     bank: "KeyB",
   },
-  {
-    up: "ArrowUp",
-    down: "ArrowDown",
-    left: "ArrowLeft",
-    right: "ArrowRight",
-    sprint: "ShiftRight",
-    shoot: "Enter",
-    move: "Slash",
-    cross: "Comma",
-    step: "KeyM",
-    steal: "Period",
-    defend: "KeyL",
-    bank: "KeyN",
-  },
 ];
 export class InputManager {
   constructor(onPause) {
@@ -40,8 +26,11 @@ export class InputManager {
     this.moveIndex = 0;
     this.onPause = onPause;
     window.addEventListener("keydown", (e) => {
-      if (e.code === "Escape" && !e.repeat) {
-        onPause();
+      if (e.code === "Escape" || e.key === "Escape") {
+        // Prevent the same key from immediately dismissing the dialog it opens.
+        e.preventDefault();
+        e.stopPropagation();
+        if (!e.repeat) onPause();
         return;
       }
       if (

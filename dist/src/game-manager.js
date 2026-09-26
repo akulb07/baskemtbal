@@ -1,21 +1,16 @@
 import { SceneManager } from "./rendering.js";
 import { GameSimulation } from "./simulation.js";
-import { InputManager, DEFAULT_KEYS } from "./input.js";
+import { InputManager } from "./input.js";
 import { AIInputController } from "./ai.js";
 import { AudioManager } from "./audio.js";
 import { NetworkManager } from "./network.js";
 import { C, emptyInput, clamp, States } from "./config.js";
 const $ = (id) => document.getElementById(id);
 const defaults = {
-  volume: 0.45,
-  quality: "auto",
-  difficulty: "pro",
-  vibration: true,
-  color: "#e9974f",
+  color: "#c8102e",
   number: 23,
   name: "YOU",
   camera: 1,
-  bindings: DEFAULT_KEYS,
   server: "",
 };
 let saved = {};
@@ -23,6 +18,8 @@ try {
   saved = JSON.parse(localStorage.getItem("afterhours-settings") || "{}");
 } catch {}
 let settings = { ...defaults, ...saved };
+for (const key of ["quality", "difficulty", "volume", "vibration", "bindings"]) delete settings[key];
+settings.name = typeof settings.name === "string" ? settings.name.trim().slice(0, 16) || "YOU" : "YOU";
 function saveSettings() {
   try {
     localStorage.setItem("afterhours-settings", JSON.stringify(settings));
@@ -47,7 +44,7 @@ let scene,
 const audio = new AudioManager();
 try {
   scene = new SceneManager($("court"));
-  scene.setQuality(settings.quality);
+  scene.setQuality("high");
   scene.customize(settings);
   $("loading").hidden = true;
 } catch (e) {
@@ -56,24 +53,42 @@ try {
   console.error(e);
   throw e;
 }
-const input = new InputManager((background) => pauseGame(background));
-input.bindings = settings.bindings || structuredClone(DEFAULT_KEYS);
+const input = new InputManager((background) => {
+  if (background) pauseGame(true);
+  else if ($("panel").open) closePanel();
+  else pauseGame();
+});
 const network = new NetworkManager(handleNetwork);
 function applySettings() {
-  audio.volume = Number(settings.volume);
-  scene.setQuality(settings.quality);
+  scene.setQuality("high");
   scene.customize(settings);
-  input.bindings = settings.bindings;
   saveSettings();
 }
 applySettings();
 function selectMode(next) {
-  if (!["ai", "local", "online", "practice"].includes(next))
+  if (!["ai", "online", "practice"].includes(next))
     throw Error("Unknown mode");
   mode = next;
   document
     .querySelectorAll("[data-mode]")
     .forEach((b) => b.classList.toggle("selected", b.dataset.mode === mode));
+}
+const mapNames = { day: "DAY", night: "NIGHT" };
+if (!mapNames[settings.map]) settings.map = "day";
+for (const button of document.querySelectorAll("[data-map]")) {
+  button.onclick = () => {
+    document.querySelectorAll("[data-map]").forEach((b) => {
+      b.classList.toggle("selected", b === button);
+      b.setAttribute("aria-pressed", String(b === button));
+    });
+    settings.map = button.dataset.map;
+    scene.setMap(settings.map);
+    $("map-location").textContent = mapNames[settings.map];
+    saveSettings();
+  };
+}
+if (settings.map && mapNames[settings.map]) {
+  document.querySelector(`[data-map="${settings.map}"]`)?.click();
 }
 for (const b of document.querySelectorAll("[data-mode]"))
   b.onclick = () => {
@@ -91,10 +106,9 @@ function enterCourt() {
   document.body.classList.add("playing");
   $("hud").hidden = false;
   $("panel").close();
-  $("p1-label").textContent =
-    mode === "local" ? "PLAYER 1" : settings.name || "YOU";
+  $("p1-label").textContent = settings.name || "YOU";
   $("p2-label").textContent =
-    mode === "ai" ? "RIVAL" : mode === "practice" ? "PRACTICE" : "PLAYER 2";
+    mode === "ai" ? "GOAT" : mode === "practice" ? "SOLO" : "OPPONENT";
   $("feedback").textContent = "";
   $("banner").textContent = "";
   audio.unlock();
@@ -108,7 +122,7 @@ function startGame(next = mode) {
   network.disconnect();
   localId = 0;
   game = new GameSimulation(mode);
-  ai = new AIInputController(1, settings.difficulty);
+  ai = new AIInputController(1, "pro");
   enterCourt();
 }
 $("play").onclick = () => startGame();
@@ -168,7 +182,7 @@ function pauseGame(background = false) {
   input.enabled = false;
   input.clear();
   showPanel(
-    '<span class="eyebrow">TAKE A BREATHER</span><h2>TIME OUT.</h2><p>Your court will be right here.</p><button id="resume-game" class="primary">BACK TO THE GAME →</button><button id="pause-controls" class="secondary-button">HOW TO PLAY</button><button id="restart-game" class="secondary-button">RESTART MATCH</button><button id="leave-game" class="secondary-button">MAIN MENU</button>',
+    '<h2>PAUSED</h2><button id="resume-game" class="primary">BACK TO THE GAME →</button><button id="pause-controls" class="secondary-button">HOW TO PLAY</button><button id="restart-game" class="secondary-button">RESTART MATCH</button><button id="leave-game" class="secondary-button">MAIN MENU</button>',
   );
   $("resume-game").onclick = resumeGame;
   $("restart-game").onclick = () => startGame(mode);
@@ -184,107 +198,27 @@ function resumeGame() {
 $("pause").onclick = () => pauseGame();
 function openControls() {
   showPanel(
-    '<span class="eyebrow">THE FUNDAMENTALS</span><h2>MAKE YOUR MOVE.</h2><p>Hold shoot, then release in the green. A quick tap pump fakes. Drive close to the rim for a layup or an open dunk. After a defensive rebound, take the ball beyond the arc.</p><div class="control-grid"><div><h3>PLAYER 1</h3><span>WASD</span> · Move<br><span>Left Shift</span> · Sprint<br><span>Space</span> · Shoot / fake<br><span>C / Q</span> · Cross / combo<br><span>X</span> · Step back<br><span>E</span> · Steal<br><span>F</span> · Defend + jump<br><span>B + Space</span> · Bank shot</div><div><h3>PLAYER 2</h3><span>Arrow keys</span> · Move<br><span>Right Shift</span> · Sprint<br><span>Enter</span> · Shoot / fake<br><span>, / /</span> · Cross / combo<br><span>M</span> · Step back<br><span>.</span> · Steal<br><span>L</span> · Defend + jump<br><span>N + Enter</span> · Bank shot</div></div><h3>TOUCH CONTROLS</h3><p>Drag the left stick to move. Hold DRIVE to sprint; double tap for a burst. Tap MOVE to cross, swipe left/right for behind-the-back/between-the-legs, down to step back, up to spin. Hold SHOOT and release in the green; tap DEFEND to jump and reach, then hold to slide. SHOOT becomes BLOCK on defense.</p><p>Q cycles between-the-legs, behind-the-back, hesitation, spin, and in-and-out. Moves cost stamina. A green release is strongest when balanced and open.</p><button id="controls-done" class="primary">GOT IT →</button>',
+    '<span class="eyebrow">CONTROLS</span><h2>GET BUCKETS.</h2><div class="control-grid"><div><b>WASD</b> · Move<br><b>SHIFT</b> · Sprint<br><b>SPACE</b> · Shoot / fake<br><b>C / Q</b> · Cross / combo<br><b>X</b> · Step back<br><b>E</b> · Steal<br><b>F</b> · Defend / block<br><b>B + SPACE</b> · Bank shot</div></div><p>Drive at the rim and release near the green for a dunk. On touch, drag the stick to move and hold SHOOT to release your shot.</p><button id="controls-done" class="primary">GOT IT →</button>',
   );
   $("controls-done").onclick = closePanel;
 }
 $("controls-button").onclick = openControls;
 function openSettings() {
   showPanel(
-    '<span class="eyebrow">YOUR GAME, YOUR WAY</span><h2>SETTINGS</h2><div class="row"><div><label for="difficulty">AI difficulty</label><select id="difficulty"><option value="rookie">Rookie</option><option value="pro">Pro</option><option value="allstar">All-Star</option><option value="elite">Elite</option></select></div><div><label for="quality">Graphics</label><select id="quality"><option value="auto">Auto</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div></div><label for="volume">Sound volume</label><input id="volume" type="range" min="0" max="1" step=".05"><div class="row"><div><label for="display-name">Display name</label><input id="display-name" maxlength="16"></div><div><label for="jersey-number">Jersey number</label><input id="jersey-number" type="number" min="0" max="99"></div><div><label for="jersey-color">Jersey color</label><input id="jersey-color" type="color"></div></div><label><input id="vibration" type="checkbox"> Touch vibration</label><button id="rebind" class="secondary-button">CUSTOMIZE KEYBOARD CONTROLS</button><button id="settings-save" class="primary">SAVE SETTINGS →</button>',
+    '<h2>PLAYER</h2><label for="display-name">Name</label><input id="display-name" maxlength="16"><div class="row"><div><label for="jersey-number">Number</label><input id="jersey-number" type="number" min="0" max="99"></div><div><label for="jersey-color">Color</label><input id="jersey-color" type="color"></div></div><button id="settings-save" class="primary">SAVE</button>',
   );
-  $("difficulty").value = settings.difficulty;
-  $("quality").value = settings.quality;
-  $("volume").value = settings.volume;
   $("display-name").value = settings.name;
   $("jersey-number").value = settings.number;
   $("jersey-color").value = settings.color;
-  $("vibration").checked = settings.vibration;
   $("settings-save").onclick = () => {
-    Object.assign(settings, {
-      difficulty: $("difficulty").value,
-      quality: $("quality").value,
-      volume: Number($("volume").value),
-      name: $("display-name").value.trim() || "YOU",
-      number: clamp(Number($("jersey-number").value) || 0, 0, 99),
-      color: $("jersey-color").value,
-      vibration: $("vibration").checked,
-    });
+    settings.name = $("display-name").value.trim().slice(0, 16) || "YOU";
+    settings.number = clamp(Number($("jersey-number").value) || 0, 0, 99);
+    settings.color = $("jersey-color").value;
     applySettings();
     closePanel();
   };
-  $("rebind").onclick = openBindings;
-}
-function openBindings() {
-  showPanel(
-    '<span class="eyebrow">KEYBOARD</span><h2>YOUR CONTROLS</h2><p>Select a key, then press its replacement. Escape is reserved for pause. Avoid duplicate keys.</p><div id="binding-grid" class="control-grid"></div><button id="bindings-reset" class="secondary-button">RESTORE DEFAULTS</button><button id="bindings-done" class="primary">SAVE CONTROLS →</button>',
-  );
-  for (let id = 0; id < 2; id++) {
-    const col = document.createElement("div");
-    const h = document.createElement("h3");
-    h.textContent = `PLAYER ${id + 1}`;
-    col.append(h);
-    for (const [action, key] of Object.entries(settings.bindings[id])) {
-      const button = document.createElement("button");
-      button.className = "secondary-button";
-      button.textContent = `${action}: ${key.replace("Key", "")}`;
-      button.style.fontSize = "12px";
-      button.style.padding = "7px";
-      button.onclick = () => {
-        button.textContent = "Press a key…";
-        const capture = (e) => {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          if (e.code !== "Escape") {
-            const duplicate = settings.bindings.some((b, j) =>
-              Object.entries(b).some(
-                ([a, k]) => k === e.code && !(id === j && a === action),
-              ),
-            );
-            if (duplicate) {
-              button.textContent = "Already used — choose another";
-              return;
-            }
-            settings.bindings[id][action] = e.code;
-            button.textContent = `${action}: ${e.code.replace("Key", "")}`;
-          }
-          window.removeEventListener("keydown", capture, true);
-        };
-        window.addEventListener("keydown", capture, true);
-      };
-      col.append(button);
-    }
-    $("binding-grid").append(col);
-  }
-  $("bindings-reset").onclick = () => {
-    settings.bindings = structuredClone(DEFAULT_KEYS);
-    openBindings();
-  };
-  $("bindings-done").onclick = () => {
-    applySettings();
-    openSettings();
-  };
 }
 $("settings-button").onclick = openSettings;
-$("sound").onclick = () => {
-  audio.unlock();
-  audio.enabled = !audio.enabled;
-  $("sound").textContent = audio.enabled ? "♪" : "×";
-  $("sound").setAttribute(
-    "aria-label",
-    audio.enabled ? "Mute sound" : "Enable sound",
-  );
-};
-$("fullscreen").onclick = async () => {
-  try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else await document.documentElement.requestFullscreen();
-  } catch {
-    showPanel(
-      "<h2>FULLSCREEN</h2><p>This browser does not support fullscreen here. You can still play in this window.</p>",
-    );
-  }
-};
 function openOnline() {
   const defaultURL = ["localhost", "127.0.0.1"].includes(location.hostname)
     ? `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`
@@ -332,7 +266,7 @@ function handleNetwork(m) {
     $("copy-room").onclick = async () => {
       try {
         await navigator.clipboard.writeText(
-          `Afterhours room: ${m.code}\nServer: ${network.url}`,
+          `BASKEMTBAL room: ${m.code}\nServer: ${network.url}`,
         );
         $("online-status").textContent = "Invite copied.";
       } catch {
@@ -355,8 +289,8 @@ function handleNetwork(m) {
     game = new GameSimulation("online");
     game.restore(m.state);
     enterCourt();
-    $("p1-label").textContent = localId === 0 ? "YOU" : "OPPONENT";
-    $("p2-label").textContent = localId === 1 ? "YOU" : "OPPONENT";
+    $("p1-label").textContent = localId === 0 ? settings.name : "OPPONENT";
+    $("p2-label").textContent = localId === 1 ? settings.name : "OPPONENT";
   } else if (m.type === "snapshot") {
     network.reconcile(game, m);
   } else if (m.type === "reconnecting") {
@@ -389,8 +323,9 @@ function gameOver() {
   input.enabled = false;
   const win = game.winner === localId;
   showPanel(
-    `<span class="eyebrow">FINAL SCORE</span><h2>${mode === "local" ? `PLAYER ${game.winner + 1} WINS.` : win ? "YOUR COURT." : "RUN IT BACK."}</h2><div class="final-score">${game.score[0]} <span style="color:#94aab0">—</span> ${game.score[1]}</div><p>${game.stats[localId].made} / ${game.stats[localId].attempts} field goals · ${game.stats[localId].rebounds} rebounds · ${game.stats[localId].blocks} blocks</p><button id="rematch" class="primary">REMATCH →</button><button id="over-menu" class="secondary-button">MAIN MENU</button>`,
+    `<span class="eyebrow">FINAL SCORE</span><h2>${win ? "YOUR COURT." : "RUN IT BACK."}</h2><div class="final-score">${game.score[0]} <span style="color:#94aab0">—</span> ${game.score[1]}</div><div class="result-stats"><b>PLAYER</b><b>FG</b><b>REB</b><b>STL</b><b>BLK</b>${game.stats.map((s, i) => `<span>${i === localId ? "YOU" : mode === "ai" ? "GOAT" : "OPPONENT"}</span><span>${s.made}/${s.attempts}</span><span>${s.rebounds}</span><span>${s.steals}</span><span>${s.blocks}</span>`).join("")}</div><button id="rematch" class="primary">REMATCH →</button><button id="over-menu" class="secondary-button">MAIN MENU</button>`,
   );
+  document.querySelectorAll(".result-stats > span")[localId * 5].textContent = settings.name;
   $("rematch").onclick = () => {
     if (mode === "online") {
       network.send({ type: "rematch" });
@@ -400,28 +335,40 @@ function gameOver() {
   $("over-menu").onclick = mainMenu;
 }
 function handleEvents() {
+  let missed = false;
   for (const e of game.events) {
     if (e.id <= lastEvent) continue;
     lastEvent = e.id;
     audio.play(e.type);
+    if (e.type === "miss") missed = true;
     if (e.type === "message") setBanner(e.text);
     if (e.type === "score") {
-      setBanner(`+${e.points} ${e.swish ? "SWISH" : "BUCKET"}`, 1.6);
+      const callout = e.points === 2 ? "BANG"
+        : e.shotType === "DUNK" ? "THROW IT DOWN"
+        : e.distance >= 2.1 && !["LAYUP", "REVERSE LAYUP", "FLOATER"].includes(e.shotType) ? "MONEY"
+        : e.swish ? "SWISH" : "BUCKET";
+      setBanner(callout, 1.6);
       scene.netPulse = 0.8;
     }
     if (e.type === "shot" && e.perfect) {
       audio.play("perfect");
-      if (settings.vibration) navigator.vibrate?.(20);
     }
-    if (e.type === "rebound" && e.clear) setBanner("CLEAR BEYOND THE ARC", 1.6);
-    if (["score", "steal", "block"].includes(e.type) && settings.vibration)
-      navigator.vibrate?.(25);
+    if (e.type === "rebound" && e.clear) setBanner("CLEAR", 1.6);
     if (e.type === "steal" || e.type === "block")
-      setBanner(e.type.toUpperCase(), 1.2);
+      setBanner(e.type === "block" ? "REJECTED" : "STEAL", 1.2);
   }
+  if (missed) setBanner("loud ahh brick", 1.6);
 }
 function updateHud() {
   const p = game.players[localId];
+  for (let i = 0; i < 2; i++) {
+    const s = game.stats[i], label = i === localId ? (settings.name || "YOU") : mode === "ai" ? "GOAT" : mode === "practice" ? "SOLO" : "OPPONENT";
+    $(`stat-name${i}`).textContent = label;
+    $(`stat-fg${i}`).textContent = `${s.made}/${s.attempts} · ${s.attempts ? Math.round(s.made / s.attempts * 100) : 0}%`;
+    $(`stat-reb${i}`).textContent = s.rebounds;
+    $(`stat-stl${i}`).textContent = s.steals;
+    $(`stat-blk${i}`).textContent = s.blocks;
+  }
   $("score0").textContent = game.score[0];
   $("score1").textContent = game.score[1];
   $("clock").textContent =
@@ -434,7 +381,7 @@ function updateHud() {
   $("possession-text").textContent =
     game.ball.owner === localId
       ? game.needsClear
-        ? "CLEAR THE BALL"
+        ? "CLEAR"
         : "YOUR BALL"
       : game.ball.owner === null
         ? "CHASE THE REBOUND"
@@ -463,7 +410,7 @@ function updateHud() {
           : "BALL"
         : game.timer > 0.5
           ? "CHECK BALL"
-          : "BALL IN";
+          : "START";
   else if (performance.now() > bannerUntil) $("banner").textContent = "";
   document.querySelector("[data-action=shoot]").textContent =
     game.ball.owner === localId ? (game.canDunk(p) || p.shotPlan === 'DUNK' ? 'DUNK' : "SHOOT") : "BLOCK";
@@ -492,8 +439,7 @@ function frame(now) {
       const own = input.enabled ? input.sample(0) : emptyInput();
       const inputs = [emptyInput(), emptyInput()];
       inputs[localId] = own;
-      if (mode === "local") inputs[1] = input.sample(1);
-      else if (mode === "ai") inputs[1] = ai.sample(game);
+      if (mode === "ai") inputs[1] = ai.sample(game);
       if (mode === "online") {
         networkEdge = {
           ...own,
@@ -541,18 +487,18 @@ if (mc?.registerTool) {
       mc.registerTool({
         name: "start_basketball_game",
         description:
-          "Start a local basketball match against AI, two-player keyboard match, or free practice.",
+          "Start a basketball match against AI or play solo.",
         inputSchema: {
           type: "object",
           properties: {
-            mode: { type: "string", enum: ["ai", "local", "practice"] },
+            mode: { type: "string", enum: ["ai", "practice"] },
           },
           required: ["mode"],
           additionalProperties: false,
         },
         annotations: { readOnlyHint: false },
         execute: ({ mode: next }) => {
-          if (!["ai", "local", "practice"].includes(next))
+          if (!["ai", "practice"].includes(next))
             throw Error("Unsupported local mode");
           startGame(next);
           return { mode: next, state: game.state };

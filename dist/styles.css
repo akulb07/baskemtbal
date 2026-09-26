@@ -2,9 +2,9 @@
 :root {
   font-family: Barlow, Arial, sans-serif;
   color: #f7f4e9;
-  background: #101922;
+  background: #0c0b0e;
   font-synthesis: none;
-  --orange: #ffad61;
+  --orange: #c8102e;
   --muted: #a5b0b1;
   --green: #c7f26e;
 }
@@ -52,9 +52,9 @@ button:active {
   pointer-events: none;
   background: linear-gradient(
     90deg,
-    rgba(11, 19, 26, 0.96) 0%,
-    rgba(11, 19, 26, 0.9) 22%,
-    rgba(11, 19, 26, 0.24) 58%,
+    rgba(12, 11, 14, 0.97) 0%,
+    rgba(12, 11, 14, 0.9) 22%,
+    rgba(12, 11, 14, 0.25) 58%,
     transparent 80%
   );
 }
@@ -67,7 +67,7 @@ button:active {
   align-items: center;
 }
 .brand-mark {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
   font-size: 36px;
   font-weight: 900;
   letter-spacing: -7px;
@@ -82,7 +82,7 @@ button:active {
 }
 .brand strong {
   font-size: 19px;
-  letter-spacing: 3px;
+  letter-spacing: 0;
 }
 .brand small {
   display: block;
@@ -113,13 +113,12 @@ button:active {
   width: 44px;
   height: 44px;
   border: 1px solid #d9dfda35;
-  background: #111e2890;
+  background: #100e12df;
   border-radius: 50%;
   font-size: 24px;
-  backdrop-filter: blur(10px);
 }
 .icon-button:hover {
-  background: #304048;
+  background: #c8102e;
 }
 .menu {
   position: absolute;
@@ -128,6 +127,12 @@ button:active {
   width: 340px;
   pointer-events: auto;
 }
+.court-picker { margin-top: 14px; }
+.court-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px; }
+.court-choice { min-width: 0; padding: 8px 4px; border: 1px solid #ffffff24; background: #100e12d9; color: #eee; font-size: 10px; font-weight: 700; letter-spacing: .5px; }
+.court-choice small { display: block; margin-top: 4px; color: #aaa4a8; font-size: 8px; }
+.court-choice.selected { border-color: var(--orange); background: #c8102e35; }
+.court-picker > .eyebrow { font-size: 9px; }
 .eyebrow {
   font-size: 11px;
   letter-spacing: 2.4px;
@@ -174,16 +179,15 @@ h1 em {
   border: 1px solid transparent;
   border-bottom-color: #d2ddd018;
   gap: 17px;
-  transition: background 0.2s;
 }
 .mode.selected {
-  background: #e8edda0e;
+  background: #c8102e20;
   border-color: #e6eeda25;
   border-left: 3px solid var(--orange);
   padding-left: 13px;
 }
 .mode:hover {
-  background: #edf8e015;
+  background: #c8102e28;
 }
 .mode-number {
   color: #768c96;
@@ -194,7 +198,7 @@ h1 em {
   color: var(--orange);
 }
 .mode b {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
   letter-spacing: 1.4px;
   font-size: 21px;
 }
@@ -211,7 +215,7 @@ h1 em {
 }
 .primary {
   background: var(--orange);
-  color: #13212a;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -223,8 +227,15 @@ h1 em {
   letter-spacing: 1.2px;
 }
 .primary:hover {
-  background: #ffc08a;
+  background: #e31b3d;
 }
+.match-stats { position: absolute; left: 24px; top: 112px; width: 270px; padding: 10px 12px; background: #100e12e8; border: 1px solid #c8102e80; border-top: 2px solid #c8102e; box-shadow: 0 8px 30px #0008; font-variant-numeric: tabular-nums; }
+.stats-head, .stats-row { display: grid; grid-template-columns: 1.35fr 1.25fr .65fr .65fr .65fr; gap: 4px; align-items: center; }
+.stats-head { color: #c8102e; font-size: 9px; letter-spacing: .6px; font-weight: 800; padding-bottom: 6px; }
+.stats-row { border-top: 1px solid #ffffff18; padding: 7px 0 2px; font-size: 11px; }
+.stats-row b { color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.result-stats { display: grid; grid-template-columns: 1.35fr 1.25fr .65fr .65fr .65fr; gap: 8px; align-items: center; margin: 16px 0 20px; padding: 12px; background: #0c0b0e; border-top: 2px solid var(--orange); font-size: 12px; font-variant-numeric: tabular-nums; }
+.result-stats b { color: var(--orange); font-size: 10px; }
 .primary span {
   font-size: 23px;
   line-height: 16px;
@@ -256,7 +267,7 @@ h1 em {
   justify-content: end;
 }
 .court-tag b {
-  font-family: "Barlow Condensed";
+  font-family: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
   display: block;
   font-weight: 700;
   font-size: 42px;
@@ -295,7 +306,7 @@ footer i {
 #loading {
   position: fixed;
   inset: 0;
-  background: #121e27;
+  background: #0c0b0e;
   z-index: 20;
   display: flex;
   justify-content: center;
@@ -322,10 +333,8 @@ body.playing .shell {
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  background: #11222ae6;
-  box-shadow: 0 10px 40px #0004;
+  background: #100e12ed;
   border: 1px solid #e7e9d625;
-  backdrop-filter: blur(12px);
 }
 .score-side {
   display: grid;
@@ -338,7 +347,7 @@ body.playing .shell {
   position: relative;
 }
 .score-side.away {
-  border-color: #9dcdd1;
+  border-color: #f2f2f2;
 }
 .score-side span {
   font-weight: 700;
@@ -346,7 +355,7 @@ body.playing .shell {
   letter-spacing: 1.2px;
 }
 .score-side b {
-  font-family: "Barlow Condensed";
+  font-family: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
   font-size: 44px;
   line-height: 1;
 }
@@ -363,7 +372,7 @@ body.playing .shell {
   text-align: center;
   width: 110px;
   padding: 10px;
-  background: #0a172190;
+  background: #0c0b0ee6;
 }
 .clock small {
   display: block;
@@ -373,7 +382,7 @@ body.playing .shell {
 }
 .clock strong {
   display: block;
-  font-family: "Barlow Condensed";
+  font-family: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
   font-size: 34px;
   line-height: 1.2;
 }
@@ -429,7 +438,7 @@ body.playing .shell {
 }
 kbd {
   border: 1px solid #d4dfd54d;
-  background: #10212ab8;
+  background: #100e12e8;
   padding: 5px 8px;
   color: #fff;
   margin-right: 7px;
@@ -441,7 +450,7 @@ kbd {
   top: 23%;
   width: 100%;
   text-align: center;
-  font-family: "Barlow Condensed";
+  font-family: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
   font-weight: 800;
   font-size: 52px;
   text-shadow: 0 3px 15px #0008;
@@ -472,7 +481,7 @@ kbd {
 }
 .meter-track {
   height: 15px;
-  background: #152632e6;
+  background: #100e12ed;
   border: 1px solid #fff5;
   margin: 8px 0;
   position: relative;
@@ -505,7 +514,7 @@ kbd {
   left: 24px;
   top: 30px;
   font-size: 12px;
-  background: #0d202ab8;
+  background: #100e12ed;
   padding: 8px;
   border-radius: 4px;
 }
@@ -513,20 +522,18 @@ kbd {
   display: none;
 }
 dialog {
-  background: #15232c;
+  background: #121014;
   color: #f6f3e6;
   border: 1px solid #bcc9bd44;
   max-width: min(560px, 92vw);
   width: 100%;
   padding: 38px;
-  box-shadow: 0 20px 90px #0008;
 }
 dialog::backdrop {
-  background: #071019b8;
-  backdrop-filter: blur(6px);
+  background: #050406d9;
 }
 dialog h2 {
-  font-family: "Barlow Condensed";
+  font-family: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
   font-size: 40px;
   margin: 0 0 8px;
   letter-spacing: 1px;
@@ -629,7 +636,7 @@ dialog .row > * {
   font-size: 13px;
 }
 .final-score {
-  font-family: "Barlow Condensed";
+  font-family: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
   font-size: 65px;
   color: var(--orange);
 }
@@ -676,7 +683,7 @@ dialog .row > * {
     height: 124px;
     border: 1px solid #eaf4de65;
     border-radius: 50%;
-    background: #16303c50;
+    background: #1a1016;
     touch-action: none;
   }
   #joystick i {
@@ -702,7 +709,7 @@ dialog .row > * {
   .touch {
     height: 60px;
     border-radius: 50%;
-    background: #152c39a0;
+    background: #100e12e8;
     border: 1px solid #e7f0db70;
     font-size: 10px;
     font-weight: 700;
@@ -711,8 +718,8 @@ dialog .row > * {
     user-select: none;
   }
   .touch.shoot {
-    background: #f9ae68e6;
-    color: #17222b;
+    background: #c8102e;
+    color: #fff;
     height: 76px;
     grid-column: 2;
     grid-row: 1 / 3;
@@ -732,6 +739,9 @@ dialog .row > * {
   .scoreboard {
     top: 10px;
   }
+  .match-stats { top: 86px; left: 10px; width: 230px; padding: 7px 8px; }
+  .stats-row { font-size: 10px; }
+  .stats-head { font-size: 8px; }
   .score-side {
     width: 110px;
     padding: 12px;
@@ -767,6 +777,9 @@ dialog .row > * {
   }
 }
 @media (max-width: 800px) {
+  .match-stats { top: 86px; left: 10px; width: 230px; padding: 7px 8px; }
+  .stats-row { font-size: 10px; }
+  .stats-head { font-size: 8px; }
   .brand {
     left: 22px;
     top: 20px;

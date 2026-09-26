@@ -6,97 +6,60 @@
       name="viewport"
       content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"
     />
-    <meta name="theme-color" content="#111821" />
+    <meta name="theme-color" content="#0c0b0e" />
     <meta
       name="description"
-      content="Afterhours: a 3D half-court basketball game. Challenge the AI, a friend, or work on your release in practice."
+      content="BASKEMTBAL: a 3D basketball game."
     />
-    <title>AFTERHOURS — Streetball</title>
+    <title>BASKEMTBAL</title>
     <link
       rel="icon"
       type="image/svg+xml"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111821'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ef964d'/%3E%3Cpath d='M5 16h22M16 5v22M8 8q16 8 0 16M24 8q-16 8 0 16' fill='none' stroke='%23111821' stroke-width='1.5'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230c0b0e'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23c8102e'/%3E%3Cpath d='M5 16h22M16 5v22M8 8q16 8 0 16M24 8q-16 8 0 16' fill='none' stroke='%23fff' stroke-width='1.5'/%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <canvas id="court" aria-label="3D basketball court"></canvas>
     <div id="loading">
-      <span class="eyebrow">AFTERHOURS / STREETBALL</span>
-      <h1>Opening the court<span>…</span></h1>
-      <p id="load-status">Preparing players and physics</p>
+      <span class="eyebrow">BASKEMTBAL</span>
+      <h1>Loading...</h1>
+      <p id="load-status">One sec</p>
     </div>
     <div class="shell">
       <header class="brand">
-        <div class="brand-mark">A<span>H</span></div>
         <div>
-          <strong>AFTERHOURS</strong><small>STREETBALL / VOL. 01</small>
+        <strong>BASKEMTBAL</strong>
         </div>
       </header>
       <div class="top-actions">
-        <span class="location"
-          >WESTSIDE COURT <span> / </span> SUNSET SESSION</span
-        ><button
-          id="sound"
-          class="icon-button"
-          aria-label="Toggle sound"
-          title="Toggle sound"
-        >
-          ♪</button
-        ><button
-          id="fullscreen"
-          class="icon-button"
-          aria-label="Fullscreen"
-          title="Fullscreen"
-        >
-          ⛶
-        </button>
+        <span id="map-location" class="location">DAY</span>
       </div>
       <main id="menu" class="menu">
-        <span class="eyebrow"><i></i> THE COURT IS YOURS</span>
-        <h1>OWN THE<br /><em>LAST LIGHT.</em></h1>
-        <p class="intro">One court. Two players. All game.</p>
         <div class="mode-list" role="group" aria-label="Game mode">
           <button class="mode selected" data-mode="ai">
-            <span class="mode-number">01</span
-            ><span><b>VS AI</b><small>Find your edge</small></span
-            ><span class="mode-icon">↗</span>
-          </button>
-          <button class="mode" data-mode="local">
-            <span class="mode-number">02</span
-            ><span
-              ><b>LOCAL 1V1</b
-              ><small>Settle it on the same keyboard</small></span
-            ><span class="mode-icon">↗</span>
+            <span><b>VS AI</b></span>
           </button>
           <button class="mode" data-mode="online">
-            <span class="mode-number">03</span
-            ><span
-              ><b>ONLINE 1V1</b
-              ><small>Bring a friend to your court</small></span
-            ><span class="mode-icon">↗</span>
+            <span><b>ONLINE 1V1</b></span>
           </button>
           <button class="mode" data-mode="practice">
-            <span class="mode-number">04</span
-            ><span><b>PRACTICE</b><small>Just you and the basket</small></span
-            ><span class="mode-icon">↗</span>
+            <span><b>SOLO</b></span>
           </button>
         </div>
-        <button id="play" class="primary">STEP ON COURT <span>→</span></button>
+        <div class="court-picker">
+          <span class="eyebrow">COURT</span>
+          <div class="court-choices">
+            <button class="court-choice selected" data-map="day" aria-pressed="true">DAY</button>
+            <button class="court-choice" data-map="night" aria-pressed="false">NIGHT</button>
+          </div>
+        </div>
+        <button id="play" class="primary">BALL</button>
         <div class="menu-links">
-          <button id="controls-button">HOW TO PLAY <span>↗</span></button
-          ><button id="settings-button">SETTINGS <span>↗</span></button>
+          <button id="controls-button">CONTROLS</button
+          ><button id="settings-button">PLAYER</button>
         </div>
       </main>
-      <div id="court-tag" class="court-tag">
-        <span class="eyebrow">NO RESERVATIONS. JUST REPUTATION.</span
-        ><b>WESTSIDE <span>01</span></b
-        ><small>HALF COURT · FIRST TO 11 · WIN BY 2</small>
-      </div>
-      <footer id="menu-footer">
-        <span>BUILT FOR THE LOVE OF THE GAME.</span
-        ><span>KEYBOARD + TOUCH <i>●</i> READY TO PLAY</span>
-      </footer>
     </div>
     <section id="hud" hidden>
       <div class="scoreboard">
@@ -109,9 +72,14 @@
           ><span>FIRST TO 11</span>
         </div>
         <div class="score-side away">
-          <span id="p2-label">RIVAL</span><b id="score1">0</b
+          <span id="p2-label">GOAT</span><b id="score1">0</b
           ><i class="possession" id="poss1"></i>
         </div>
+      </div>
+      <div class="match-stats" aria-label="Live match stats">
+        <div class="stats-head"><span>PLAYER</span><span>FG</span><span>REB</span><span>STL</span><span>BLK</span></div>
+        <div class="stats-row"><b id="stat-name0">YOU</b><span id="stat-fg0">0/0 · 0%</span><span id="stat-reb0">0</span><span id="stat-stl0">0</span><span id="stat-blk0">0</span></div>
+        <div class="stats-row"><b id="stat-name1">GOAT</b><span id="stat-fg1">0/0 · 0%</span><span id="stat-reb1">0</span><span id="stat-stl1">0</span><span id="stat-blk1">0</span></div>
       </div>
       <button id="pause" class="icon-button pause" aria-label="Pause game">
         Ⅱ
@@ -158,6 +126,34 @@
       ↻ <span>Rotate your device for the best experience</span>
     </div>
     <pre id="debug" hidden></pre>
-    <script type="module" src="src/game-manager.js"></script>
+    <script>
+      const loading = document.getElementById("loading");
+      const status = document.getElementById("load-status");
+      if (location.protocol === "file:") {
+        loading.querySelector("h1").textContent = "Open the local game.";
+        status.textContent = "Run npm start in the streetball folder, then use the link below.";
+        const link = document.createElement("a");
+        link.href = "http://localhost:4173/";
+        link.textContent = "PLAY →";
+        link.className = "primary";
+        link.style.cssText = "width:240px;text-decoration:none;justify-content:center";
+        loading.append(link);
+      } else {
+        import("./src/game-manager.js").catch((error) => {
+          loading.hidden = false;
+          loading.querySelector("h1").textContent = "Couldn't open the court.";
+          status.textContent = "Try refreshing. If it keeps happening, share the error below.";
+          const details = document.createElement("details");
+          const summary = document.createElement("summary");
+          summary.textContent = "Error details";
+          const message = document.createElement("pre");
+          message.textContent = error.message || String(error);
+          message.style.cssText = "white-space:pre-wrap;max-width:80vw";
+          details.append(summary, message);
+          loading.append(details);
+          console.error(error);
+        });
+      }
+    </script>
   </body>
 </html>
