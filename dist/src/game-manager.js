@@ -203,7 +203,7 @@ function resumeGame() {
 $("pause").onclick = () => pauseGame();
 function openControls() {
   showPanel(
-    '<span class="eyebrow">CONTROLS</span><h2>GET BUCKETS.</h2><div class="control-grid"><div><b>WASD</b> · Move<br><b>SHIFT</b> · Sprint<br><b>SPACE</b> · Shoot / fake<br><b>C / Q</b> · Cross / combo<br><b>X</b> · Step back<br><b>E</b> · Steal<br><b>F</b> · Defend / block<br><b>B + SPACE</b> · Bank shot</div></div><p>Drive at the rim and release near the green for a dunk. On touch, drag the stick to move and hold SHOOT to release your shot.</p><button id="controls-done" class="primary">GOT IT →</button>',
+    '<div class="control-grid"><div></div></div><button id="controls-done" class="primary">SAVE</button>',
   );
   const grid = document.querySelector('.control-grid');
   grid.replaceChildren();
@@ -231,9 +231,6 @@ function openControls() {
     grid.append(label);
   }
   refresh();
-  const hint = document.createElement('p');
-  hint.textContent = 'Click a key, then press its replacement. Used keys swap. Esc stays pause.';
-  grid.before(hint);
   const reset = document.createElement('button');
   reset.className = 'secondary-button';
   reset.textContent = 'RESET KEYS';
