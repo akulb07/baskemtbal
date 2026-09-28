@@ -1,6 +1,7 @@
 import { SceneManager } from "./rendering.js";
 import { GameSimulation } from "./simulation.js";
 import { InputManager } from "./input.js";
+import { KEY_ACTIONS, loadBindings, rebind, keyLabel } from "./keybinds.js";
 import { AIInputController } from "./ai.js";
 import { AudioManager } from "./audio.js";
 import { NetworkManager } from "./network.js";
@@ -19,7 +20,8 @@ try {
   saved = JSON.parse(localStorage.getItem("afterhours-settings") || "{}");
 } catch {}
 let settings = { ...defaults, ...saved };
-for (const key of ["quality", "difficulty", "volume", "vibration", "bindings"]) delete settings[key];
+for (const key of ["quality", "difficulty", "volume", "vibration"]) delete settings[key];
+settings.bindings = loadBindings(settings.bindings);
 settings.name = typeof settings.name === "string" ? settings.name.trim().slice(0, 16) || "YOU" : "YOU";
 function saveSettings() {
   try {
@@ -61,6 +63,8 @@ const input = new InputManager((background) => {
 });
 const network = new NetworkManager(handleNetwork);
 function applySettings() {
+  input.bindings = [{ ...settings.bindings }];
+  input.clear();
   scene.setQuality("high");
   scene.customize(settings);
   saveSettings();
@@ -201,7 +205,46 @@ function openControls() {
   showPanel(
     '<span class="eyebrow">CONTROLS</span><h2>GET BUCKETS.</h2><div class="control-grid"><div><b>WASD</b> · Move<br><b>SHIFT</b> · Sprint<br><b>SPACE</b> · Shoot / fake<br><b>C / Q</b> · Cross / combo<br><b>X</b> · Step back<br><b>E</b> · Steal<br><b>F</b> · Defend / block<br><b>B + SPACE</b> · Bank shot</div></div><p>Drive at the rim and release near the green for a dunk. On touch, drag the stick to move and hold SHOOT to release your shot.</p><button id="controls-done" class="primary">GOT IT →</button>',
   );
-  $("controls-done").onclick = closePanel;
+  const grid = document.querySelector('.control-grid');
+  grid.replaceChildren();
+  const draft = { ...settings.bindings };
+  const fields = {};
+  const refresh = () => {
+    for (const action of Object.keys(fields)) fields[action].value = keyLabel(draft[action]);
+  };
+  for (const [action, title] of Object.entries(KEY_ACTIONS)) {
+    const label = document.createElement('label');
+    label.textContent = title;
+    const field = document.createElement('input');
+    field.readOnly = true;
+    field.setAttribute('aria-label', `${title} key`);
+    field.onkeydown = (event) => {
+      if (event.code === 'Tab') return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.code === 'Escape') { field.blur(); return; }
+      if (event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
+      if (rebind(draft, action, event.code)) refresh();
+    };
+    fields[action] = field;
+    label.append(field);
+    grid.append(label);
+  }
+  refresh();
+  const hint = document.createElement('p');
+  hint.textContent = 'Click a key, then press its replacement. Used keys swap. Esc stays pause.';
+  grid.before(hint);
+  const reset = document.createElement('button');
+  reset.className = 'secondary-button';
+  reset.textContent = 'RESET KEYS';
+  reset.onclick = () => { Object.assign(draft, loadBindings()); refresh(); };
+  $('controls-done').before(reset);
+  $('controls-done').textContent = 'SAVE';
+  $("controls-done").onclick = () => {
+    settings.bindings = { ...draft };
+    applySettings();
+    closePanel();
+  };
 }
 $("controls-button").onclick = openControls;
 function openSettings() {
@@ -211,6 +254,11 @@ function openSettings() {
   $("display-name").value = settings.name;
   $("jersey-number").value = settings.number;
   $("jersey-color").value = settings.color;
+  const keysButton = document.createElement('button');
+  keysButton.className = 'secondary-button';
+  keysButton.textContent = 'KEYBINDS';
+  $('settings-save').after(keysButton);
+  keysButton.onclick = () => { $('settings-save').onclick(); openControls(); };
   $("settings-save").onclick = () => {
     settings.name = $("display-name").value.trim().slice(0, 16) || "YOU";
     settings.number = clamp(Number($("jersey-number").value) || 0, 0, 99);
