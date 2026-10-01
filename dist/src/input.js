@@ -1,4 +1,5 @@
 import { emptyInput, clamp } from "./config.js";
+import { FINISHES, MOVES } from './moves.js';
 export const DEFAULT_KEYS = [
   {
     up: "KeyW",
@@ -13,6 +14,8 @@ export const DEFAULT_KEYS = [
     steal: "KeyE",
     defend: "KeyF",
     bank: "KeyB",
+    post: 'KeyZ', euro: 'KeyV', pinoy: 'KeyN', hop: 'KeyH',
+    pass: 'KeyR', switchPlayer: 'KeyT', screen: 'KeyG', finishCycle: 'KeyL', moveCycle: 'KeyK',
   },
 ];
 export class InputManager {
@@ -24,6 +27,8 @@ export class InputManager {
     this.touchEdges = {};
     this.enabled = false;
     this.moveIndex = 0;
+    this.selectedMove = 'between';
+    this.selectedFinish = 'auto';
     this.onPause = onPause;
     window.addEventListener("keydown", (e) => {
       if (e.code === "Escape" || e.key === "Escape") {
@@ -73,20 +78,31 @@ export class InputManager {
     input.block = edge("defend");
     input.steal = edge("steal");
     input.bank = held("bank");
+    input.post = held('post');
+    input.pass = edge('pass');
+    input.switchPlayer = edge('switchPlayer');
+    input.screen = held('screen');
+    if (edge('finishCycle')) this.selectedFinish = FINISHES[(FINISHES.indexOf(this.selectedFinish)+1)%FINISHES.length];
+    if (edge('moveCycle')) {
+      const moves = Object.keys(MOVES);
+      this.selectedMove = moves[(moves.indexOf(this.selectedMove)+1)%moves.length];
+    }
+    input.finish = this.selectedFinish || 'auto';
     if (edge("cross")) input.move = "crossover";
     if (edge("step")) input.move = "stepback";
     if (edge("move"))
-      input.move = ["between", "behind", "hesitation", "spin", "inout"][
-        this.moveIndex++ % 5
-      ];
+      input.move = this.selectedMove || 'between';
+    for (const action of ['euro','pinoy','hop']) if (edge(action)) input.move = action;
     if (id === 0) {
       input.x = clamp(input.x + this.touch.x, -1, 1);
       input.z = clamp(input.z + this.touch.z, -1, 1);
-      for (const key of ["shoot", "sprint", "defend"])
+      for (const key of ["shoot", "sprint", "defend", 'post', 'screen'])
         input[key] ||= this.touch[key];
       input.move = this.touchEdges.move || input.move;
       input.steal ||= this.touchEdges.steal;
       input.block ||= this.touchEdges.block;
+      input.pass ||= this.touchEdges.pass;
+      input.switchPlayer ||= this.touchEdges.switchPlayer;
       this.touchEdges = {};
     }
     for (const code of Object.values(k)) this.pressed.delete(code);
@@ -109,6 +125,8 @@ export class InputManager {
       stick.style.transform = `translate(${dx * factor * r}px,${dy * factor * r}px)`;
     };
     joy.addEventListener("pointerdown", (e) => {
+      if (!this.enabled || pointer !== null) return;
+      e.preventDefault();
       pointer = e.pointerId;
       const r = joy.getBoundingClientRect();
       origin = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
@@ -121,17 +139,19 @@ export class InputManager {
       this.touch.x = this.touch.z = 0;
       stick.style.transform = "";
     };
-    joy.addEventListener("pointerup", end);
-    joy.addEventListener("pointercancel", end);
+    joy.addEventListener("pointerup", e => { if (e.pointerId === pointer) end(); });
+    joy.addEventListener("pointercancel", e => { if (e.pointerId === pointer) end(); });
     let lastDrive = 0;
     for (const button of document.querySelectorAll("[data-action]")) {
       let start = null;
       button.addEventListener("pointerdown", (e) => {
+        if (!this.enabled) return;
         e.preventDefault();
         button.setPointerCapture(e.pointerId);
         start = { x: e.clientX, y: e.clientY, time: performance.now() };
         const a = button.dataset.action;
         if (a === "move") return;
+        if (a === 'pass' || a === 'switchPlayer') { this.touchEdges[a] = true; return; }
         this.touch[a] = true;
         if (a === "defend") {
           this.touchEdges.steal = true;
@@ -155,7 +175,7 @@ export class InputManager {
           else if (dy < -24) this.touchEdges.move = "spin";
           else if (Math.abs(dx) > 24)
             this.touchEdges.move = dx < 0 ? "behind" : "between";
-          else this.touchEdges.move = "crossover";
+          else this.touchEdges.move = this.selectedMove;
         }
         start = null;
       });

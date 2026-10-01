@@ -1,5 +1,6 @@
 import * as T from "../vendor/three.module.js";
 import { C, clamp } from "./config.js";
+import { animatePlayer } from './animation.js';
 export class SceneManager {
   constructor(canvas) {
     this.renderer = new T.WebGLRenderer({
@@ -208,7 +209,10 @@ export class SceneManager {
     floor.receiveShadow = true;
     this.box(0, 1.8, -0.95, 0.18, 3.6, 0.18, 0x243c43);
     this.tube([0, 3.45, -0.95], [0, 3.6, 1.03], 0.08, 0x263b42);
-    this.box(0, 3.4, 1.045, 1.88, 1.16, 0.07, 0xd5e0d6);
+    const board = this.box(0, 3.4, 1.045, 1.88, 1.16, 0.07, 0xd5e0d6);
+    board.material = new T.MeshPhysicalMaterial({color:0xddeaf0,transparent:true,opacity:.3,roughness:.15,depthWrite:false});
+    for (const x of [-.94,.94]) this.box(x,3.4,1.045,.035,1.18,.075,0xe5e7e5);
+    for (const y of [2.82,3.98]) this.box(0,y,1.045,1.91,.035,.075,0xe5e7e5);
     this.box(0, 3.36, 1.087, 0.65, 0.5, 0.012, 0xe28b5c);
     this.box(0, 3.38, 1.1, 0.56, 0.41, 0.014, 0xd4ddd4);
     this.box(0, 3.07, 1.15, 0.14, 0.05, 0.15, 0xcf613b);
@@ -367,10 +371,10 @@ export class SceneManager {
       body,
     );
     hair.position.y = 1.75;
-    this.box(0, 1.56, 0.02, 0.13, 0.13, 0.13, skin, body);
+    const neck = this.box(0, 1.56, 0.02, 0.13, 0.13, 0.13, skin, body);
     const arms = [],
       forearms = [],
-      legs = [];
+      legs = [], knees = [], feet = [], hands = [];
     for (const s of [-1, 1]) {
       const arm = new T.Group();
       arm.position.set(s * 0.29, 1.43, 0);
@@ -396,6 +400,7 @@ export class SceneManager {
         fore,
       );
       hand.position.y = -0.32;
+      hands.push(hand);
       arms.push(arm);
       forearms.push(fore);
       const leg = new T.Group();
@@ -407,23 +412,29 @@ export class SceneManager {
         leg,
       );
       shorts.position.y = -0.1;
+      const thigh = this.mesh(new T.CapsuleGeometry(.093,.17,3,8),this.mat(skin),leg);
+      thigh.position.y = -.28;
+      const knee = new T.Group();
+      knee.position.y = -.38;
+      leg.add(knee);
       const shin = this.mesh(
-        new T.CapsuleGeometry(0.086, 0.38, 3, 8),
+        new T.CapsuleGeometry(0.076, 0.16, 3, 8),
         this.mat(skin),
-        leg,
+        knee,
       );
-      shin.position.y = -0.42;
-      this.box(
+      shin.position.y = -0.14;
+      const foot = this.box(
         0,
-        -0.65,
+        -0.35,
         0.055,
         0.19,
         0.13,
         0.32,
         id ? 0xebe7d5 : 0xe6b978,
-        leg,
+        knee,
       );
       legs.push(leg);
+      knees.push(knee); feet.push(foot);
     }
     const num = document.createElement("canvas");
     num.width = 128;
@@ -444,13 +455,22 @@ export class SceneManager {
     label2.position.z = -0.24;
     label2.rotation.y = Math.PI;
     body.add(label2);
+    const upperBody = new T.Group();
+    upperBody.position.y = 1.05;
+    body.add(upperBody);
+    for (const part of [torso,head,hair,neck,...arms,label,label2]) {
+      upperBody.add(part);
+      part.position.y -= 1.05;
+    }
     return {
       root,
       body,
+      upperBody,
       torso,
       arms,
       forearms,
       legs,
+      knees, feet, hands,
       id,
       skin,
       labels: [label, label2],
@@ -519,11 +539,20 @@ export class SceneManager {
     this.resize();
   }
   resize() {
-    this.camera.aspect = innerWidth / innerHeight;
+    const compact = matchMedia('(pointer: coarse)').matches;
+    this.viewHeight = compact && document.body.classList.contains('playing') ? Math.max(180,innerHeight-150) : innerHeight;
+    this.camera.aspect = innerWidth / this.viewHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(innerWidth, innerHeight, false);
+    this.renderer.setSize(innerWidth, this.viewHeight, false);
   }
   update(g, dt, menu = false, localId = 0) {
+    const desiredHeight = matchMedia('(pointer: coarse)').matches && !menu ? Math.max(180,innerHeight-150) : innerHeight;
+    if (this.viewHeight !== desiredHeight) this.resize();
+    while (this.characters.length < g.players.length) {
+      const id = this.characters.length;
+      this.characters.push(this.createPlayer(id%2 ? 0x171519 : 0xc8102e,id));
+    }
+    this.characters.forEach((c,i) => c.root.visible = i < g.players.length && !(g.mode === 'practice' && i === 1));
     this.menu = menu;
     const cameraPos = menu
       ? this.temp.set(15, 12, 22)
@@ -532,13 +561,14 @@ export class SceneManager {
       const p = g.players[localId];
       cameraPos.x = p.x * 0.23;
       cameraPos.z += clamp(p.z - 7, -4, 5) * 0.2;
+      if (this.camera.aspect < 1) { cameraPos.y = 18; cameraPos.z = 29; cameraPos.x = 0; }
     }
     const damp = 1 - Math.exp(-dt * 3);
     this.camera.position.lerp(cameraPos, damp);
     this.temp.set(menu ? -2.8 : 0, menu ? 0 : 0.3, menu ? 5.3 : 5.4);
     this.look.lerp(this.temp, damp);
     this.camera.lookAt(this.look);
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < g.players.length; i++) {
       const p = g.players[i],
         c = this.characters[i];
       c.root.visible = !(g.mode === "practice" && i === 1);
@@ -548,43 +578,7 @@ export class SceneManager {
         Math.cos(p.angle - c.root.rotation.y),
       );
       c.root.rotation.y += delta * Math.min(1, dt * 13);
-      const speed = Math.hypot(p.vx, p.vz),
-        stride = Math.sin(p.phase * 5.1) * Math.min(0.7, speed * 0.18);
-      c.legs[0].rotation.x = stride;
-      c.legs[1].rotation.x = -stride;
-      c.body.position.y =
-        speed > 0.2 ? Math.abs(Math.sin(p.phase * 5.1)) * 0.04 : 0;
-      c.body.rotation.x = p.defending ? 0.13 : 0;
-      c.arms[0].rotation.set(-stride * 0.4, 0, 0.08);
-      c.arms[1].rotation.set(stride * 0.4, 0, -0.08);
-      c.forearms.forEach((a) => (a.rotation.x = -0.28));
-      if (p.defending) {
-        c.arms[0].rotation.z = 0.8;
-        c.arms[1].rotation.z = -0.8;
-        c.legs[0].rotation.z = 0.12;
-        c.legs[1].rotation.z = -0.12;
-      } else {
-        c.legs.forEach((l) => (l.rotation.z = 0));
-      }
-      if (g.ball.owner === i && !p.charging) {
-        const hand = p.hand === 1 ? 1 : 0;
-        c.arms[hand].rotation.x =
-          -0.2 - Math.abs(Math.cos(p.phase * Math.PI)) * 0.48;
-        c.forearms[hand].rotation.x = -0.6;
-      }
-      if (
-        p.charging ||
-        p.state === "SHOOTING" ||
-        p.state === "BLOCKING" ||
-        p.state === "DUNK" ||
-        p.state === "LAYUP"
-      ) {
-        c.arms.forEach((a) => (a.rotation.x = -2.65));
-        c.forearms.forEach((a) => (a.rotation.x = -0.35));
-      }
-      if (p.moveTime > 0 && p.moveKind === "spin")
-        c.body.rotation.y = (0.7 - p.moveTime) * Math.PI * 3;
-      else c.body.rotation.y = 0;
+      animatePlayer(c,p,g.ball,dt);
     }
     const b = g.ball;
     this.ball.position.set(b.x, b.y, b.z);

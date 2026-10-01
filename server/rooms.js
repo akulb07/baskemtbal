@@ -2,17 +2,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { randomBytes } from "node:crypto";
 import { GameSimulation } from "../dist/src/simulation.js";
 import { C, emptyInput, clamp } from "../dist/src/config.js";
+import { MOVES, FINISHES } from '../dist/src/moves.js';
 
-const validMoves = new Set([
-  "crossover",
-  "between",
-  "behind",
-  "hesitation",
-  "spin",
-  "inout",
-  "stepback",
-  "retreat",
-]);
 export function validateInput(raw) {
   if (!raw || typeof raw !== "object") return null;
   for (const k of ["x", "z"])
@@ -26,7 +17,11 @@ export function validateInput(raw) {
     steal: raw.steal === true,
     block: raw.block === true,
     bank: raw.bank === true,
-    move: validMoves.has(raw.move) ? raw.move : null,
+    move: Object.hasOwn(MOVES, raw.move) ? raw.move : null,
+    post: raw.post === true,
+    pass: raw.pass === true,
+    screen: raw.screen === true,
+    finish: FINISHES.includes(raw.finish) ? raw.finish : 'auto',
   };
 }
 export function attachRooms(server) {
@@ -44,13 +39,16 @@ export function attachRooms(server) {
       code: room.code,
       players: room.slots.filter(Boolean).map((s) => s.name),
       count: room.slots.filter(Boolean).length,
+      capacity: room.capacity,
+      mode: room.mode,
     });
   }
   function start(room) {
-    room.game = new GameSimulation("online");
+    room.game = new GameSimulation(room.mode);
     room.game.timer = 3;
     room.running = true;
     room.rematch.clear();
+    room.history = [];
     room.slots.forEach((s) => {
       s.input = emptyInput();
       s.ready = false;
@@ -59,7 +57,7 @@ export function attachRooms(server) {
   }
   function tryStart(room) {
     if (
-      room.slots.length === 2 &&
+      room.slots.length === room.capacity &&
       room.slots.every((s) => s?.ws?.readyState === WebSocket.OPEN && s.ready)
     )
       start(room);
@@ -78,20 +76,22 @@ export function attachRooms(server) {
     };
     ws.room = room;
     ws.slot = slot;
-    send(ws, { type: "joined", code: room.code, slot, token });
+    send(ws, { type: "joined", code: room.code, slot, token, capacity: room.capacity, mode: room.mode });
     roomInfo(room);
     if (room.slots.length === 2 && room.slots.every(Boolean) && quick === room)
       quick = null;
   }
-  function create(ws, isQuick) {
+  function create(ws, isQuick, mode = 'online') {
     let code;
     do {
       code = randomBytes(4).toString("hex").slice(0, 5).toUpperCase();
     } while (rooms.has(code));
     const room = {
       code,
+      mode,
+      capacity: mode === 'online2v2' ? 4 : 2,
       slots: [],
-      game: new GameSimulation("online"),
+      game: new GameSimulation(mode),
       running: false,
       rematch: new Set(),
       history: [],
@@ -137,7 +137,7 @@ export function attachRooms(server) {
           s.disconnected = 0;
           ws.room = room;
           ws.slot = slot;
-          send(ws, { type: "joined", code: room.code, slot, token: s.token });
+          send(ws, { type: "joined", code: room.code, slot, token: s.token, capacity: room.capacity, mode: room.mode });
           broadcast(room, { type: "reconnected" });
           if (room.running)
             send(ws, { type: "start", state: room.game.snapshot() });
@@ -155,7 +155,7 @@ export function attachRooms(server) {
             .replace(/[<>]/g, "")
             .trim()
             .slice(0, 16) || "PLAYER";
-        if (m.type === "create") create(ws, false);
+        if (m.type === "create") create(ws, false, m.mode === 'online2v2' ? 'online2v2' : 'online');
         else if (m.type === "quick") {
           if (
             quick &&
@@ -171,18 +171,19 @@ export function attachRooms(server) {
               type: "error",
               message: "Room not found. Check the code.",
             });
-          else if (room.slots.length >= 2)
+          else if (room.slots.length >= room.capacity)
             send(ws, {
               type: "error",
-              message: "This court already has two players.",
+              message: "This room is full.",
             });
-          else join(ws, room, 1);
+          else join(ws, room, room.slots.length);
         }
         return;
       }
       const room = ws.room,
         s = room.slots[ws.slot];
       if (m.type === "ready") {
+        if (room.running) return;
         s.ready = true;
         tryStart(room);
       } else if (m.type === "input" && room.running) {
@@ -203,7 +204,7 @@ export function attachRooms(server) {
       } else if (m.type === "rematch" && room.game.state === "GAME_OVER") {
         room.rematch.add(ws.slot);
         broadcast(room, { type: "rematch", count: room.rematch.size });
-        if (room.rematch.size === 2) start(room);
+        if (room.rematch.size === room.capacity) start(room);
       } else if (m.type === "leave") {
         ws.close(1000, "Left room");
       }
@@ -237,7 +238,7 @@ export function attachRooms(server) {
             broadcast(room, {
               type: "ended",
               message:
-                "Opponent disconnected. Return to the menu to start a new game.",
+                "A player disconnected. Return to the menu to start a new game.",
             });
             room.running = false;
           }
@@ -269,10 +270,12 @@ export function attachRooms(server) {
           s.input.steal = false;
           s.input.block = false;
           s.input.move = null;
+          s.input.pass = false;
         });
         room.history.push({
           time: Date.now(),
           players: room.game.players.map((p) => ({
+            id: p.id,
             x: p.x,
             z: p.z,
             y: p.y,

@@ -140,3 +140,57 @@ test("quick match pairs two waiting humans", async () => {
     await new Promise((r) => server.close(r));
   }
 });
+
+test('2v2 waits for four humans, routes slot 3 input, passes to teammate, reconnects and requires four rematch votes', async () => {
+  const server=http.createServer();
+  const {rooms,wss}=attachRooms(server);
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const url=`ws://127.0.0.1:${server.address().port}/ws`, clients=[];
+  try {
+    let code, lastToken;
+    for (let i=0;i<4;i++) {
+      const c=await connect(url); clients.push(c);
+      c.send(i===0?{type:'create',mode:'online2v2'}:{type:'join',code});
+      const joined=await c.until('joined');
+      code=joined.code; lastToken=joined.token;
+      assert.equal(joined.slot,i); assert.equal(joined.capacity,4);
+      c.send({type:'ready'});
+      if (i<3) { await wait(30); assert.ok(!clients[0].messages.some(m=>m.type==='start')); }
+    }
+    const start=await clients[3].until('start');
+    assert.deepEqual(start.state.players.map(p=>p.team),[0,1,0,1]);
+    const extra=await connect(url); clients.push(extra);
+    extra.send({type:'join',code});
+    assert.match((await extra.until('error')).message,/full/);
+    const room=rooms.get(code);
+    room.game.state='LIVE'; room.game.timer=0;
+    const initial=room.game.players[3].x;
+    clients[3].send({type:'input',seq:1,input:{...emptyInput(),x:1}});
+    await clients[0].until('snapshot',m=>m.ack[3]===1 && m.state.players[3].x>initial+.1);
+    room.game.players.forEach((p,i)=>Object.assign(p,{x:6,z:12-i,y:0,vx:0,vz:0}));
+    Object.assign(room.game.players[0],{x:-3,z:7});
+    Object.assign(room.game.players[2],{x:3,z:7});
+    room.game.ball.owner=0;
+    clients[0].send({type:'input',seq:1,input:{...emptyInput(),pass:true,x:1}});
+    await clients[2].until('snapshot',m=>m.state.ball.passing && m.state.ball.passTarget===2);
+    await clients[2].until('snapshot',m=>m.state.ball.owner===2);
+    clients[3].ws.close();
+    await clients[0].until('reconnecting');
+    const resumed=await connect(url); clients.push(resumed);
+    resumed.send({type:'resume',code,token:lastToken});
+    assert.equal((await resumed.until('joined')).slot,3);
+    assert.equal((await resumed.until('start')).state.players.length,4);
+    room.game.state='GAME_OVER'; room.game.score=[11,7];
+    clients.slice(0,3).forEach(c=>c.send({type:'rematch'}));
+    await clients[0].until('rematch',m=>m.count===3);
+    assert.deepEqual(room.game.score,[11,7]);
+    resumed.send({type:'rematch'});
+    await clients[0].until('rematch',m=>m.count===4);
+    assert.deepEqual(room.game.score,[0,0]);
+    assert.equal(room.game.state,'CHECK_BALL');
+    assert.equal(room.game.players.length,4);
+  } finally {
+    clients.forEach(c=>c.ws.terminate()); wss.close();
+    await new Promise(r=>server.close(r));
+  }
+});

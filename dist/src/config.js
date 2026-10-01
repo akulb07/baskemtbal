@@ -4,6 +4,7 @@ export const C = Object.freeze({
   courtWidth: 15,
   courtLength: 14,
   hoop: { x: 0, y: 3.05, z: 1.45 },
+  board: { z: 1.08, halfWidth: .94, bottom: 2.82, top: 3.98 },
   rimRadius: 0.2286,
   ballRadius: 0.12,
   rimTube: 0.018,
@@ -36,6 +37,11 @@ export const emptyInput = () => ({
   block: false,
   move: null,
   bank: false,
+  post: false,
+  pass: false,
+  switchPlayer: false,
+  screen: false,
+  finish: 'auto',
 });
 export const attributes = () => ({
   speed: 75,

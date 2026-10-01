@@ -4,6 +4,9 @@ export const KEY_ACTIONS = {
   up: 'Move forward', down: 'Move back', left: 'Move left', right: 'Move right',
   sprint: 'Sprint', shoot: 'Shoot / fake', move: 'Combo', cross: 'Crossover',
   step: 'Step back', steal: 'Steal', defend: 'Defend / block', bank: 'Bank shot',
+  post: 'Post up', euro: 'Euro step', pinoy: 'Pinoy step', hop: 'Hop step',
+  pass: 'Pass', switchPlayer: 'Switch player', screen: 'Screen', finishCycle: 'Next finish',
+  moveCycle: 'Next move',
 };
 export function validKey(code) {
   return typeof code === 'string' && /^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Shift(Left|Right)|Space|Enter|Backspace|Comma|Period|Slash|Semicolon|Quote|BracketLeft|BracketRight|Backslash|Minus|Equal|Numpad[0-9])$/.test(code);

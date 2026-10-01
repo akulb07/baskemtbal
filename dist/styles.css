@@ -635,6 +635,14 @@ dialog .row > * {
   color: var(--orange);
   font-size: 13px;
 }
+.move-picker { position: absolute; right: 24px; bottom: 90px; display: flex; gap: 8px; pointer-events: auto; }
+.move-picker label { display: grid; gap: 4px; font-size: 10px; }
+.move-picker select { max-width: 155px; background: #151016; color: #fff; border: 1px solid #ffffff40; padding: 9px; font: inherit; }
+#stats-toggle { position: absolute; top: 24px; left: 24px; pointer-events: auto; background: #141014; padding: 10px; font-size: 11px; z-index: 3; }
+.team-only { display: none; }
+.team-mode .team-only { display: block; }
+.online-team [data-action="switchPlayer"] { display: none; }
+dialog { max-height: 90dvh; overflow-y: auto; }
 .final-score {
   font-family: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
   font-size: 65px;
@@ -972,4 +980,49 @@ dialog .row > * {
   .desktop-hints {
     display: none;
   }
+}
+
+/* Keep the playable court above a dedicated thumb-control strip. */
+@media (pointer: coarse) {
+  body.playing #court { height: calc(100dvh - 150px); top: 0; }
+  body.playing #rotate { display: none; }
+  #hud .match-stats { display: none; top: 58px; left: 8px; background: #100e12f5; width: 260px; }
+  body.show-stats #hud .match-stats { display: block; }
+  #hud .scoreboard { top: max(5px,env(safe-area-inset-top)); height: 43px; }
+  #hud .score-side { width: 85px; padding: 4px 8px; gap: 4px; }
+  #hud .score-side span { font-size: 9px; letter-spacing: 0; max-width: 53px; overflow: hidden; }
+  #hud .score-side b { font-size: 26px; }
+  #hud .clock { width: 40px; padding: 4px; }
+  #hud .clock strong { font-size: 24px; }
+  #hud .clock small, #hud .clock span { display: none; }
+  #hud .possession { bottom: 2px; left: 8px; }
+  #hud .pause { top: max(7px,env(safe-area-inset-top)); right: max(6px,env(safe-area-inset-right)); width: 38px; height: 38px; }
+  #stats-toggle { top: max(8px,env(safe-area-inset-top)); left: max(6px,env(safe-area-inset-left)); padding: 8px 3px; font-size: 9px; }
+  #touch-controls { position: absolute; bottom: 0; height: 150px; width: 100%; background: #0c0b0ef5; border-top: 1px solid #c8102e55; }
+  #joystick { width: 96px; height: 96px; left: max(12px,env(safe-area-inset-left)); bottom: max(12px,env(safe-area-inset-bottom)); background: #ffffff08; }
+  #joystick i { left: 26px; top: 26px; }
+  #hud .touch-actions { bottom: max(6px,env(safe-area-inset-bottom)); right: max(8px,env(safe-area-inset-right)); grid-template-columns: repeat(4,44px); gap: 4px; }
+  #hud .touch { height: 44px; width: 44px; font-size: 8px; border-radius: 12px; }
+  #hud .touch.shoot { height: 44px; width: 44px; grid-column: 4; grid-row: 2; justify-self: end; }
+  #hud .touch[data-action=defend] { position: static; width: 44px; }
+  #hud .player-readout { left: 15px; bottom: 125px; width: 90px; }
+  #hud .player-readout small, #hud .player-readout > span { display: none; }
+  #hud .stamina { margin: 0; height: 3px; }
+  .move-picker { bottom: 104px; right: 8px; gap: 4px; }
+  .move-picker label { font-size: 8px; gap: 2px; }
+  .move-picker select { max-width: 103px; height: 28px; padding: 3px; font-size: 10px; }
+  #hud #banner { top: 55px; font-size: 24px; letter-spacing: 1px; }
+  #hud #feedback { top: 84px; font-size: 10px; letter-spacing: 0; }
+  #hud #shot-meter { bottom: 168px; width: 155px; }
+  #hud #shot-meter > span, #hud #shot-context { display: none; }
+  #hud #connection { top: 50px; right: 8px; font-size: 9px; }
+  .menu { max-height: 76dvh; overflow-y: auto; }
+}
+@media (pointer: coarse) and (orientation: landscape) {
+  #hud .touch-actions { grid-template-columns: repeat(4,50px); right: max(12px,env(safe-area-inset-right)); }
+  #hud .touch { width: 50px; }
+  .move-picker { right: 250px; bottom: 30px; }
+  #hud #banner { font-size: 20px; top: 48px; }
+  #hud #feedback { top: 72px; }
+  .menu { top: 54px; max-height: calc(100dvh - 60px); }
 }

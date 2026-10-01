@@ -43,9 +43,11 @@
           <button class="mode" data-mode="online">
             <span><b>ONLINE 1V1</b></span>
           </button>
+          <button class="mode" data-mode="online2v2"><span><b>ONLINE 2V2</b></span></button>
           <button class="mode" data-mode="practice">
             <span><b>SOLO</b></span>
           </button>
+          <button class="mode" data-mode="team"><span><b>3V3 · VS AI</b></span></button>
         </div>
         <div class="court-picker">
           <span class="eyebrow">COURT</span>
@@ -84,6 +86,11 @@
       <button id="pause" class="icon-button pause" aria-label="Pause game">
         Ⅱ
       </button>
+      <button id="stats-toggle" aria-expanded="false">STATS</button>
+      <div class="move-picker">
+        <label>MOVE <select id="move-select" aria-label="Selected dribble or gather"></select></label>
+        <label>FINISH <select id="finish-select" aria-label="Selected shot finish"></select></label>
+      </div>
       <div id="connection"></div>
       <div id="banner" role="status"></div>
       <div id="feedback" aria-live="polite"></div>
@@ -113,6 +120,10 @@
           ><button data-action="sprint" class="touch secondary">DRIVE</button
           ><button data-action="defend" class="touch secondary">DEFEND</button
           ><button data-action="shoot" class="touch shoot">SHOOT</button>
+          <button data-action="post" class="touch secondary">POST</button>
+          <button data-action="pass" class="touch secondary team-only">PASS</button>
+          <button data-action="switchPlayer" class="touch secondary team-only">SWITCH</button>
+          <button data-action="screen" class="touch secondary team-only">SCREEN</button>
         </div>
       </div>
     </section>

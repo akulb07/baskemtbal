@@ -44,11 +44,11 @@ export class NetworkManager {
     this.reconnecting = false;
     this.started = false;
   }
-  connect(url, action, name, code) {
+  connect(url, action, name, code, mode = 'online') {
     this.disconnect();
     this.intentional = false;
     this.url = url;
-    this.action = { type: action, name, code };
+    this.action = { type: action, name, code, mode };
     this.token = null;
     this.seq = 0;
     this.pending = [];
@@ -169,7 +169,7 @@ export class NetworkManager {
     this.pending = this.pending.filter((p) => p.seq > ack);
     game.restore(m.state);
     for (const pending of this.pending) {
-      const inputs = [emptyInput(), emptyInput()];
+      const inputs = game.players.map(() => emptyInput());
       inputs[this.slot] = pending.input;
       for (let i = 0; i < 4; i++) {
         game.step(C.dt, inputs);
@@ -178,6 +178,7 @@ export class NetworkManager {
           move: null,
           steal: false,
           block: false,
+          pass: false,
         };
       }
     }
@@ -185,14 +186,14 @@ export class NetworkManager {
   renderState(game) {
     const sample = this.buffer.sample(clamp(85 + this.jitter * 2, 85, 180));
     if (!sample) return game;
-    const remote = 1 - this.slot;
-    const p = { ...game.players[remote] },
-      a = sample.a.players[remote],
-      b = sample.b.players[remote],
-      t = sample.t;
-    for (const k of ["x", "y", "z"]) p[k] = a[k] + (b[k] - a[k]) * t;
-    const players = [...game.players];
-    players[remote] = p;
+    const players = game.players.map((player, id) => {
+      if (id === this.slot) return player;
+      const a = sample.a.players[id], b = sample.b.players[id];
+      if (!a || !b) return player;
+      const p = {...player};
+      for (const k of ['x','y','z']) p[k] = a[k]+(b[k]-a[k])*sample.t;
+      return p;
+    });
     return { ...game, players };
   }
   disconnect() {

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_KEYS, InputManager } from '../dist/src/input.js';
 import { emptyInput } from '../dist/src/config.js';
+import { MOVES } from '../dist/src/moves.js';
 import { loadBindings, rebind, keyLabel } from '../dist/src/keybinds.js';
 
 test('defaults, custom keys and swaps survive JSON storage', () => {
@@ -40,4 +41,19 @@ test('custom bindings drive actual input samples; old shoot key stops shooting',
   assert.equal(Boolean(input.sample(0).block), false);
   input.keys = new Set(['Space']);
   assert.equal(input.sample(0).shoot, false);
+});
+
+test('rebound move-cycle key wraps once per press and Q executes the selected move', () => {
+  const input=Object.create(InputManager.prototype);
+  input.bindings=[loadBindings({moveCycle:'KeyJ'})];
+  input.keys=new Set(); input.pressed=new Set(['KeyJ']);
+  input.touch=emptyInput(); input.touchEdges={};
+  const moves=Object.keys(MOVES);
+  input.selectedMove=moves.at(-1);
+  input.sample(0);
+  assert.equal(input.selectedMove,moves[0]);
+  input.sample(0);
+  assert.equal(input.selectedMove,moves[0]);
+  input.pressed.add('KeyQ');
+  assert.equal(input.sample(0).move,moves[0]);
 });
