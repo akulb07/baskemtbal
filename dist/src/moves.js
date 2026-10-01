@@ -16,6 +16,7 @@ export const MOVES = {
 };
 export const FINISHES = ['auto', 'scoop', 'jelly', 'hook', 'fade', 'reverse', 'floater', 'power', 'tomahawk', 'windmill'];
 export function shotTiming(type) {
+  if (type === 'FADEAWAY') return .46;
   return type.includes('LAYUP') || type.includes('DUNK') ? .53 : .68;
 }
 export function releasePoint(p, type) {

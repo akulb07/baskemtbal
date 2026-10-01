@@ -1,5 +1,6 @@
 import * as T from '../vendor/three.module.js';
 import { clamp } from './config.js';
+import { shotTiming } from './moves.js';
 const down = new T.Vector3(0,-1,0);
 const target = new T.Vector3(), dir = new T.Vector3(), bend = new T.Vector3(), elbow = new T.Vector3();
 const lower = new T.Vector3(), parentQ = new T.Quaternion(), lowerQ = new T.Quaternion();
@@ -77,7 +78,7 @@ export function animatePlayer(c, p, ball, dt) {
   }
   const style = p.charging ? p.shotPlan || '' : p.shotStyle || '';
   if (p.charging) {
-    c.body.position.y -= Math.sin(clamp(p.charge/.53,0,1)*Math.PI)*.12;
+    c.body.position.y -= Math.sin(clamp(p.charge/shotTiming(style),0,1)*Math.PI)*.12;
     c.knees.forEach(k => k.rotation.x += .25);
   }
   if (!air) {

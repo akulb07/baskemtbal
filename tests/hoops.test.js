@@ -149,3 +149,17 @@ test('every gather flows into an airborne finish without a second charge or stat
     assert.match(g.ball.shotType,/LAYUP/);
   }
 });
+
+test('fadeaway takes off early and rewards the quick release rather than ordinary jumper timing', () => {
+  for (const duration of [.46,.68]) {
+    const g=live('practice'), p=g.players[0];
+    Object.assign(p,{x:0,z:5});
+    step(g,.23,[{...emptyInput(),shoot:true,post:true,finish:'fade'}]);
+    assert.ok(p.y>0,'fade takeoff still uses slow jumper timing');
+    step(g,duration-.23,[{...emptyInput(),shoot:true,post:true,finish:'fade'}]);
+    g.step(C.dt,[{...emptyInput(),finish:'fade'}]);
+    assert.equal(g.lastShot.type,'FADEAWAY');
+    assert.equal(g.lastShot.perfect,duration===.46);
+    assert.ok(g.ball.y>2,'release must be airborne');
+  }
+});

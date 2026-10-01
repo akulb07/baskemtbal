@@ -864,7 +864,8 @@ export class GameSimulation {
             p.tookOff = true;
             p.state = "DUNK";
           }
-          if (!p.shotPlan?.includes('DUNK') && p.charge > .3 && !p.tookOff && p.y === 0) {
+          const takeoffTime = p.shotPlan === 'FADEAWAY' ? .18 : .3;
+          if (!p.shotPlan?.includes('DUNK') && p.charge > takeoffTime && !p.tookOff && p.y === 0) {
             p.vy = p.shotPlan?.includes('LAYUP') ? 3.8 : 3.4;
             p.shotOrigin = {x:p.x,z:p.z};
             p.tookOff = true;
