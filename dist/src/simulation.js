@@ -1,5 +1,5 @@
 import { C, clamp, length, attributes, emptyInput, States } from "./config.js";
-import { MOVES, FINISHES, shotTiming, releasePoint } from './moves.js';
+import { MOVES, FINISHES, shotTiming, releasePoint, releaseWindow } from './moves.js';
 
 export class Player {
   constructor(id) {
@@ -265,8 +265,7 @@ export class GameSimulation {
     const ideal =
       shotTiming(type);
     const timing = duration - ideal;
-    const window =
-      C.perfectWindow * (1 - 0.35 * contest) * (p.stamina < 25 ? 0.8 : 1);
+    const window = releaseWindow(dist, contest, p.stamina, speed);
     const perfect = Math.abs(timing) < window;
     const quality = clamp(
       1 -
@@ -297,7 +296,7 @@ export class GameSimulation {
     let tx = 0,
       tz = C.hoop.z;
     const error =
-      perfect && contest < 0.18 && dist < 7.5 ? 0 : (1 - quality) * 0.82;
+      perfect && contest < 0.18 ? 0 : (1 - quality) * 0.82;
     const direction =
       (p.id ? -0.7 : 0.7) + Math.sin(this.stats[p.id].attempts * 2.4) * 0.55;
     tx += error * direction;

@@ -1,3 +1,4 @@
+import { C, clamp } from './config.js';
 // Durations and displacement describe footwork, shared by client and server.
 export const MOVES = {
   crossover: { duration: .42, cost: 4, side: 1.15, forward: .18, switchHand: true },
@@ -18,6 +19,13 @@ export const FINISHES = ['auto', 'scoop', 'jelly', 'hook', 'fade', 'reverse', 'f
 export function shotTiming(type) {
   if (type === 'FADEAWAY') return .46;
   return type.includes('LAYUP') || type.includes('DUNK') ? .53 : .68;
+}
+export function releaseWindow(distance, contest, stamina, speed = 0) {
+  const deep = Math.max(0, distance-7.25);
+  const range = 1/(1+deep*.75);
+  const balance = deep > 0 ? 1/(1+speed*.12) : 1;
+  const fatigue = deep > 0 ? .6+.4*clamp(stamina/100,0,1) : stamina < 25 ? .8 : 1;
+  return C.perfectWindow*range*balance*(1-.35*contest)*fatigue;
 }
 export function releasePoint(p, type) {
   const hook = type === 'HOOK', low = /SCOOP|JELLY/.test(type);

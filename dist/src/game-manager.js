@@ -6,7 +6,7 @@ import { AIInputController } from "./ai.js";
 import { AudioManager } from "./audio.js";
 import { NetworkManager } from "./network.js";
 import { multiplayerURL } from "./multiplayer.js";
-import { MOVES, FINISHES, shotTiming } from './moves.js';
+import { MOVES, FINISHES, shotTiming, releaseWindow } from './moves.js';
 import { C, emptyInput, clamp, States } from "./config.js";
 const $ = (id) => document.getElementById(id);
 const isOnline = () => mode === 'online' || mode === 'online2v2';
@@ -441,7 +441,7 @@ function updateHud() {
   $("shot-meter").hidden = !p.charging;
   const ideal = shotTiming(game.shotType(p, { finish: input.selectedFinish }));
   $("meter-tick").style.left = `${clamp((p.charge / C.shotMax) * 100, 0, 99)}%`;
-  const timingWindow = C.perfectWindow * (1 - .35 * game.contest(localId)) * (p.stamina < 25 ? .8 : 1);
+  const timingWindow = releaseWindow(game.distance(p), game.contest(localId), p.stamina, Math.hypot(p.vx,p.vz));
   document.querySelector(".perfect-zone").style.left =
     `${((ideal - timingWindow) / C.shotMax) * 100}%`;
   document.querySelector(".perfect-zone").style.width =

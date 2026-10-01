@@ -163,3 +163,16 @@ test('fadeaway takes off early and rewards the quick release rather than ordinar
     assert.ok(g.ball.y>2,'release must be airborne');
   }
 });
+
+test('deep greens can score, while timing that greens a normal jumper misses from deep', () => {
+  for (const distance of [6.8,10,12]) for (const offset of [0,.03]) {
+    const g=live('practice'), p=g.players[0];
+    Object.assign(p,{x:0,z:C.hoop.z+distance,angle:Math.PI});
+    step(g,.6,[{...emptyInput(),shoot:true}]);
+    p.charge=.68+offset-C.dt;
+    g.step(C.dt,[emptyInput()]);
+    assert.equal(g.lastShot.perfect,distance===6.8 || offset===0);
+    step(g,2.5);
+    assert.equal(g.score[0]>0,distance===6.8 || offset===0,`${distance}m, offset ${offset}`);
+  }
+});
