@@ -85,6 +85,21 @@ function selectMode(next) {
 }
 const mapNames = { day: "DAY", night: "NIGHT" };
 if (!mapNames[settings.map]) settings.map = "day";
+if (!['1','2','3','4'].includes(settings.location)) settings.location = '1';
+const updateLocationLabel = () => $('map-location').textContent = `MAP ${settings.location} · ${mapNames[settings.map]}`;
+for (const button of document.querySelectorAll('[data-location]')) {
+  button.onclick = () => {
+    settings.location = button.dataset.location;
+    scene.setLocation(settings.location);
+    document.querySelectorAll('[data-location]').forEach(b => {
+      const selected = b === button;
+      b.classList.toggle('selected',selected);
+      b.setAttribute('aria-pressed',String(selected));
+    });
+    updateLocationLabel(); saveSettings();
+  };
+}
+document.querySelector(`[data-location="${settings.location}"]`).click();
 for (const button of document.querySelectorAll("[data-map]")) {
   button.onclick = () => {
     document.querySelectorAll("[data-map]").forEach((b) => {
@@ -93,7 +108,7 @@ for (const button of document.querySelectorAll("[data-map]")) {
     });
     settings.map = button.dataset.map;
     scene.setMap(settings.map);
-    $("map-location").textContent = mapNames[settings.map];
+    updateLocationLabel();
     saveSettings();
   };
 }

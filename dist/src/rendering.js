@@ -1,6 +1,7 @@
 import * as T from "../vendor/three.module.js";
 import { C, clamp } from "./config.js";
 import { animatePlayer } from './animation.js';
+import { createBackdrop } from './backdrops.js';
 export class SceneManager {
   constructor(canvas) {
     this.renderer = new T.WebGLRenderer({
@@ -289,33 +290,8 @@ export class SceneManager {
       ],
       0x526465,
     );
-    for (let i = 0; i < 22; i++) {
-      const x = (i - 11) * 5.5;
-      const h = 4 + (Math.sin(i * 6.2) * 0.5 + 0.5) * 13;
-      const z = -17 - (i % 3) * 6;
-      this.box(x, h / 2 - 0.5, z, 4.8, h, 5, i % 2 ? 0x687c80 : 0x7b8684);
-      for (let floor = 1; floor < h - 1; floor += 2)
-        for (let col = -1; col <= 1; col++)
-          this.box(
-            x + col * 1.1,
-            floor,
-            z + 2.51,
-            0.48,
-            0.8,
-            0.02,
-            (i + col) % 4 === 0 ? 0xdac092 : 0x536c73,
-          );
-    }
-    {
-      this.box(0, -0.18, -35, 170, 0.12, 30, 0x167f91);
-      for (let i = 0; i < 13; i++) {
-        const x = (i - 6) * 8, h = 10 + (i % 4) * 2.5;
-        this.box(x, h / 2, -43, 5, h, 4, i % 2 ? 0xe8c8a5 : 0xf0d9b9);
-        this.box(x, h + .1, -43, 5.3, .3, 4.3, 0x9e6d5f);
-        for (let y = 2; y < h - 1; y += 2) this.box(x, y, -40.9, 3.6, .5, .03, 0x426c74);
-      }
-      this.box(0, .2, -18, 100, .3, 1, 0xe8d0ad);
-    }
+    this.backdrops = new Map();
+    this.setLocation('1');
     this.floodlights = [];
     for (const x of [-10, 10]) {
       this.tube([x, 0, 5], [x, 7, 5], 0.065, 0x394f55);
@@ -505,6 +481,16 @@ export class SceneManager {
       label.material.map = tex;
     }
   }
+  setLocation(id) {
+    if (!['1','2','3','4'].includes(id) || !this.backdrops) return;
+    if (!this.backdrops.has(id)) {
+      const backdrop = createBackdrop(id);
+      this.environment.add(backdrop);
+      this.backdrops.set(id,backdrop);
+    }
+    for (const [key,group] of this.backdrops) group.visible = key === id;
+    this.currentLocation = id;
+  }
   setMap(map) {
     if (!["day", "night"].includes(map)) return;
     this.currentMap = map;
@@ -554,9 +540,11 @@ export class SceneManager {
     }
     this.characters.forEach((c,i) => c.root.visible = i < g.players.length && !(g.mode === 'practice' && i === 1));
     this.menu = menu;
+    const fov = menu ? 50 : 55;
+    if (this.camera.fov !== fov) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
     const cameraPos = menu
       ? this.temp.set(15, 12, 22)
-      : this.temp.set(0, 12.5, 20.8);
+      : this.temp.set(0, 14, 25);
     if (!menu) {
       const p = g.players[localId];
       cameraPos.x = p.x * 0.23;
@@ -565,7 +553,7 @@ export class SceneManager {
     }
     const damp = 1 - Math.exp(-dt * 3);
     this.camera.position.lerp(cameraPos, damp);
-    this.temp.set(menu ? -2.8 : 0, menu ? 0 : 0.3, menu ? 5.3 : 5.4);
+    this.temp.set(menu ? -2.8 : 0, menu ? 5 : 3.5, menu ? -7 : 5.4);
     this.look.lerp(this.temp, damp);
     this.camera.lookAt(this.look);
     for (let i = 0; i < g.players.length; i++) {

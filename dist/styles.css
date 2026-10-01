@@ -129,6 +129,7 @@ button:active {
 }
 .court-picker { margin-top: 14px; }
 .court-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px; }
+.location-choices { grid-template-columns: repeat(4,1fr); }
 .court-choice { min-width: 0; padding: 8px 4px; border: 1px solid #ffffff24; background: #100e12d9; color: #eee; font-size: 10px; font-weight: 700; letter-spacing: .5px; }
 .court-choice small { display: block; margin-top: 4px; color: #aaa4a8; font-size: 8px; }
 .court-choice.selected { border-color: var(--orange); background: #c8102e35; }
