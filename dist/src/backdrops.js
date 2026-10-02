@@ -107,14 +107,17 @@ export function createBackdrop(id) {
   } else if (id === '4') {
     // India Gate: broad sandstone piers, central arch, heavy cornices and lawns.
     const z=-18, stone=0xcaa77f;
-    box(0,-.1,-17,70,.15,32,0x6d8256);
+    // Stop behind the pavement (z=-4.5). The old lawn reached z=-1,
+    // overlapping the court foundation at the identical y=-.025 surface.
+    box(0,-.1,-19,70,.15,29,0x6d8256);
     box(0,.02,-14,8,.15,20,0xc8b797);
     for(const x of [-4.4,4.4]) {
-      box(x,5,z,3.8,10,4.2,stone);
+      // Meet the plinth and lintel at their edges; overlapping coplanar faces flicker.
+      box(x,4.85,z,3.8,8.3,4.2,stone);
       box(x,.35,z,4.5,.7,4.8,0xaf8c67);
       for(const dx of [-1.5,1.5]) box(x+dx,5,z+2.18,.22,9.5,.25,0xe2c39d);
     }
-    arch(0,6.4,z+2.15,2.6,0xe1c19a);
+    arch(0,6.4,z+2.15,2.6,0xe1c19a,5.75);
     box(0,10.5,z,12.6,3,4.3,stone);
     box(0,12.2,z,13.4,.45,4.9,0xe1c19a);
     box(0,12.9,z,10.9,1.1,3.9,stone);

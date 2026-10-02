@@ -2,6 +2,7 @@ import * as T from "../vendor/three.module.js";
 import { C, clamp } from "./config.js";
 import { animatePlayer } from './animation.js';
 import { createBackdrop } from './backdrops.js';
+import { createStreetProps } from './street-props.js';
 export class SceneManager {
   constructor(canvas) {
     this.renderer = new T.WebGLRenderer({
@@ -292,6 +293,7 @@ export class SceneManager {
     );
     this.backdrops = new Map();
     this.setLocation('1');
+    this.environment.add(createStreetProps());
     this.floodlights = [];
     for (const x of [-10, 10]) {
       this.tube([x, 0, 5], [x, 7, 5], 0.065, 0x394f55);
@@ -540,11 +542,11 @@ export class SceneManager {
     }
     this.characters.forEach((c,i) => c.root.visible = i < g.players.length && !(g.mode === 'practice' && i === 1));
     this.menu = menu;
-    const fov = menu ? 50 : 55;
+    const fov = menu ? 50 : 43;
     if (this.camera.fov !== fov) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
     const cameraPos = menu
       ? this.temp.set(15, 12, 22)
-      : this.temp.set(0, 14, 25);
+      : this.temp.set(0, 12.5, 20.8);
     if (!menu) {
       const p = g.players[localId];
       cameraPos.x = p.x * 0.23;
@@ -553,7 +555,7 @@ export class SceneManager {
     }
     const damp = 1 - Math.exp(-dt * 3);
     this.camera.position.lerp(cameraPos, damp);
-    this.temp.set(menu ? -2.8 : 0, menu ? 5 : 3.5, menu ? -7 : 5.4);
+    this.temp.set(menu ? -2.8 : 0, menu ? 5 : .3, menu ? -7 : 5.4);
     this.look.lerp(this.temp, damp);
     this.camera.lookAt(this.look);
     for (let i = 0; i < g.players.length; i++) {
