@@ -7,6 +7,38 @@ import { validateInput } from '../server/rooms.js';
 const live = (mode='ai') => { const g=new GameSimulation(mode); g.state=States.LIVE; return g; };
 const step = (g, seconds, inputs=[]) => { for(let t=0;t<seconds;t+=C.dt) g.step(C.dt,inputs); };
 
+test('behind-board possessions and loose balls end before another shot or pickup', () => {
+  for(const mode of ['ai','practice']) {
+    const g=live(mode),p=g.players[0];
+    Object.assign(p,{x:0,z:C.board.z-.1,charge:.68,charging:true});
+    g.release(p,{});
+    assert.equal(g.state,States.DEAD);
+    assert.equal(g.stats[0].attempts,0);
+    const loose=live(mode);
+    Object.assign(loose.ball,{owner:null,x:0,z:C.board.z-.1,y:.3,vx:0,vy:0,vz:0,lastTouch:0});
+    loose.ballPhysics(C.dt);
+    assert.equal(loose.state,States.DEAD);
+    const drive=live(mode);
+    Object.assign(drive.players[0],{x:0,z:C.baseline+.005,vz:-3});
+    drive.step(C.dt,[{...emptyInput(),z:-1}]);
+    assert.equal(drive.state,States.DEAD);
+  }
+});
+
+test('spin has a smaller burst and cannot immediately chain after its animation', () => {
+  const g=live('practice'), p=g.players[0];
+  const spin={...emptyInput(),move:'spin'};
+  g.step(C.dt,[spin]);
+  assert.ok(Math.abs(Math.hypot(p.vx,p.vz)-Math.hypot(.75,.9)*2.4*.83)<.001,'spin burst is reduced by 17%');
+  const hand=p.hand;
+  step(g,.67,[emptyInput()]);
+  assert.equal(p.moveTime,0);
+  g.step(C.dt,[spin]);
+  assert.equal(p.hand,hand,'second spin must wait for recovery');
+  step(g,.20,[spin]);
+  assert.equal(p.hand,-hand,'spin remains available after recovery');
+});
+
 test('descending goaltend awards the shot once, without block or brick', () => {
   const g=live();
   Object.assign(g.ball,{owner:null,x:0,y:3.65,z:C.hoop.z+.55,vy:-2,vx:0,vz:-2,age:.3,shooter:0,lastTouch:0,points:2,shotPending:true});
@@ -167,6 +199,7 @@ test('fadeaway takes off early and rewards the quick release rather than ordinar
 test('deep greens can score, while timing that greens a normal jumper misses from deep', () => {
   for (const distance of [6.8,10,12]) for (const offset of [0,.03]) {
     const g=live('practice'), p=g.players[0];
+    g.options.random=()=>.99; // Check the clean-release branch independently of range spread.
     Object.assign(p,{x:0,z:C.hoop.z+distance,angle:Math.PI});
     step(g,.6,[{...emptyInput(),shoot:true}]);
     p.charge=.68+offset-C.dt;
@@ -175,4 +208,19 @@ test('deep greens can score, while timing that greens a normal jumper misses fro
     step(g,2.5);
     assert.equal(g.score[0]>0,distance===6.8 || offset===0,`${distance}m, offset ${offset}`);
   }
+});
+
+test('full-court greens remain makeable but carry a modest accuracy risk', () => {
+  let made=0;
+  for(let i=0;i<40;i++) {
+    const g=live('practice'), p=g.players[0];
+    let draws=0;
+    g.options.random=()=>draws++===0 ? (i+.5)/40 : .5;
+    Object.assign(p,{x:0,z:13.8,angle:Math.PI,charge:.68,charging:true});
+    g.release(p,{});
+    assert.equal(g.lastShot.perfect,true);
+    step(g,3);
+    if(g.score[0]>0) made++;
+  }
+  assert.ok(made>=24 && made<=35,`Expected most, but not all, greens to score; got ${made}/40`);
 });

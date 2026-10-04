@@ -246,6 +246,10 @@ export class GameSimulation {
     return speed > 1 ? "PULL-UP" : "JUMP SHOT";
   }
   release(p, input, positions) {
+    if (this.outsideCourt(p)) {
+      this.check(this.mode === 'practice' ? 0 : this.otherTeam(p.id), 'OUT OF BOUNDS');
+      return;
+    }
     const duration = p.charge;
     let type = this.shotType(p, input);
     p.charging = false;
@@ -295,8 +299,15 @@ export class GameSimulation {
     p.gather = null;
     let tx = 0,
       tz = C.hoop.z;
-    const error =
+    let error =
       perfect && contest < 0.18 ? 0 : (1 - quality) * 0.82;
+    // Extreme range keeps a small accuracy risk even on an open green.
+    // Ease in beyond 8.5m, capped at a 25% chance of added spread at 12.5m.
+    const rangeRisk = clamp((dist-8.5)/4,0,1)*.25;
+    if (rangeRisk > 0 && !type.includes('DUNK') && !type.includes('LAYUP')) {
+      const random = this.options.random || Math.random;
+      if (random() < rangeRisk) error = Math.max(error,.40+random()*.14);
+    }
     const direction =
       (p.id ? -0.7 : 0.7) + Math.sin(this.stats[p.id].attempts * 2.4) * 0.55;
     tx += error * direction;
@@ -429,7 +440,7 @@ export class GameSimulation {
       this.emit("move", { player: p.id, move });
       p.moveTime = spec.duration;
       p.moveDuration = spec.duration;
-      p.cooldown = spec.duration;
+      p.cooldown = spec.duration + (spec.recovery || 0);
       // Finish footwork commits to a gather; the ball cannot be dribbled again.
       if (spec.finish && this.distance(p) < 4.5) {
         const d = this.distance(p) || 1;
@@ -473,13 +484,13 @@ export class GameSimulation {
     const oldZ = p.z;
     p.x += p.vx * dt;
     p.z += p.vz * dt;
-    const wasOut = Math.abs(p.x) > 7.5 || p.z < 0 || p.z > 14;
-    if (wasOut && owns && this.mode !== "practice") {
-      this.check(this.otherTeam(p.id), "OUT OF BOUNDS");
+    const wasOut = this.outsideCourt(p);
+    if (wasOut && owns) {
+      this.check(this.mode === 'practice' ? 0 : this.otherTeam(p.id), "OUT OF BOUNDS");
       return;
     }
     p.x = clamp(p.x, -7.3, 7.3);
-    p.z = clamp(p.z, 0.2, 13.8);
+    p.z = clamp(p.z, C.baseline+.2, 13.8);
     p.y += p.vy * dt;
     p.vy -= C.gravity * dt;
     if (p.y <= 0) {
@@ -623,9 +634,12 @@ export class GameSimulation {
     }
     }
     for (const p of this.players) {
-      p.x = clamp(p.x,-7.3,7.3); p.z = clamp(p.z,.2,13.8);
+      p.x = clamp(p.x,-7.3,7.3); p.z = clamp(p.z,C.baseline+.2,13.8);
       this.resolveBackboard(p);
     }
+  }
+  outsideCourt(p) {
+    return Math.abs(p.x)>C.courtWidth/2 || p.z<C.baseline || p.z>C.courtLength;
   }
   resolveBackboard(p, previousZ = p.z) {
     if (p.y+1.9 < C.board.bottom || p.y > C.board.top || Math.abs(p.x) > C.board.halfWidth+C.playerRadius) return;
@@ -748,7 +762,7 @@ export class GameSimulation {
       if (this.state === States.SHOT) this.state = States.LOOSE;
     }
     if (this.state === States.SCORE || this.state === States.DEAD) return;
-    if (Math.abs(b.x) > 7.8 || b.z < -0.4 || b.z > 14.4) {
+    if (this.outsideCourt(b)) {
       if (this.mode === "practice") this.check(0, "BALL BACK");
       else this.check(this.otherTeam(b.lastTouch), "OUT OF BOUNDS");
       return;

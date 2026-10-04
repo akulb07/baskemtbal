@@ -162,8 +162,8 @@ export class SceneManager {
     ctx.fillRect(x(-2.45), 0, 490, 580);
     ctx.strokeStyle = "#f1e5c7";
     ctx.lineWidth = 5;
-    ctx.strokeRect(8, 8, 1484, 1384);
-    ctx.strokeRect(x(-2.45), 0, 490, 580);
+    ctx.strokeRect(8, C.baseline*100, 1484, 1392-C.baseline*100);
+    ctx.strokeRect(x(-2.45), C.baseline*100, 490, 580-C.baseline*100);
     ctx.beginPath();
     ctx.arc(x(0), z(5.8), 180, 0, Math.PI);
     ctx.stroke();

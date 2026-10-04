@@ -3,6 +3,7 @@ export const C = Object.freeze({
   gravity: 9.81,
   courtWidth: 15,
   courtLength: 14,
+  baseline: 1.12,
   hoop: { x: 0, y: 3.05, z: 1.45 },
   board: { z: 1.08, halfWidth: .94, bottom: 2.82, top: 3.98 },
   rimRadius: 0.2286,
