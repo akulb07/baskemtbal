@@ -153,13 +153,13 @@ export class SceneManager {
     const x = (v) => (v + 7.5) * 100,
       z = (v) => v * 100;
     ctx.fillStyle = "#c68b68";
-    ctx.fillRect(x(-2.45), z(0), 490, 580);
+    ctx.fillRect(x(-2.45), z(C.baseline), 490, z(5.8-C.baseline));
     ctx.fillStyle = "#c69575";
     ctx.beginPath();
     ctx.arc(x(0), z(5.8), 180, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#c68b68";
-    ctx.fillRect(x(-2.45), 0, 490, 580);
+    ctx.fillRect(x(-2.45), z(C.baseline), 490, z(5.8-C.baseline));
     ctx.strokeStyle = "#f1e5c7";
     ctx.lineWidth = 5;
     ctx.strokeRect(8, C.baseline*100, 1484, 1392-C.baseline*100);
@@ -173,8 +173,8 @@ export class SceneManager {
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.beginPath();
-    ctx.moveTo(x(6.6), 0);
-    ctx.lineTo(x(6.6), z(2.865));
+    ctx.moveTo(x(6.6), z(C.baseline));
+    ctx.lineTo(x(6.6), z(C.hoop.z + Math.sqrt(6.75**2-6.6**2)));
     ctx.arc(
       x(0),
       z(1.45),
@@ -182,11 +182,7 @@ export class SceneManager {
       Math.acos(6.6 / 6.75),
       Math.PI - Math.acos(6.6 / 6.75),
     );
-    ctx.lineTo(x(-6.6), 0);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x(6.6), 0);
-    ctx.lineTo(x(6.6), z(2.86));
+    ctx.lineTo(x(-6.6), z(C.baseline));
     ctx.stroke();
     ctx.beginPath();
     ctx.arc(x(0), z(1.45), 125, 0, Math.PI);

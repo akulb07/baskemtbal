@@ -5,7 +5,7 @@ export const MOVES = {
   between: { duration: .46, cost: 4, side: .7, forward: .35, switchHand: true },
   behind: { duration: .5, cost: 5, side: 1, forward: .45, switchHand: true },
   hesitation: { duration: .6, cost: 4, side: .1, forward: .65 },
-  spin: { duration: .65, recovery: .18, cost: 9, side: .6225, forward: .747, switchHand: true },
+  spin: { duration: .65, recovery: .18, cost: 9, side: .591375, forward: .70965, switchHand: true },
   inout: { duration: .5, cost: 4, side: .85, forward: .4 },
   stepback: { duration: .5, cost: 8, side: .15, forward: -1.25 },
   retreat: { duration: .5, cost: 5, side: 0, forward: -1 },

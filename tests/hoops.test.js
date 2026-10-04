@@ -29,7 +29,7 @@ test('spin has a smaller burst and cannot immediately chain after its animation'
   const g=live('practice'), p=g.players[0];
   const spin={...emptyInput(),move:'spin'};
   g.step(C.dt,[spin]);
-  assert.ok(Math.abs(Math.hypot(p.vx,p.vz)-Math.hypot(.75,.9)*2.4*.83)<.001,'spin burst is reduced by 17%');
+  assert.ok(Math.abs(Math.hypot(p.vx,p.vz)-Math.hypot(.75,.9)*2.4*.83*.95)<.001,'spin burst is reduced another 5%');
   const hand=p.hand;
   step(g,.67,[emptyInput()]);
   assert.equal(p.moveTime,0);
